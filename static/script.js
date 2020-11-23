@@ -46,7 +46,7 @@ function updateGraph(reloadNeeded = false) {
         })
         .then(() => {
             if (reloadNeeded)
-                viz.reload()
+                viz.reload()            
             setVisEventsHandlers()  // ставим обработчики событий на холсте
             session.close()
         })
@@ -719,8 +719,6 @@ function getSelectedNodeInfo() {
         .then(() => session.close())
 }
 
-/*=================== Обработка событий ================*/
-
 /**
  * По ID вершины от визуализатора считывает известные ему свойства вершины
  * @param {number} ID вершины на холсте
@@ -758,6 +756,30 @@ function getVisualNodeIdByRealId(realID){
     return -1
 }
 
+/*=================== Обработка событий ================*/
+
+/**
+ * Привязывает обработчик к событию выбора вершины
+ * (чтобы выбрать несколько нужен длинный click или Ctrl+click по каждой следующей).
+ * Вторая выбранная вершиная ставится выбранной во втором select форме создания связи
+ */
+function setNodeSelectHandler(){    
+    viz._network.on('selectNode', (param) => {  
+        if (param.nodes.length <= 1) {  // т.е. если выделено меньше 2х вершин - не интересно
+            return
+        }
+        let currentNodeId = viz._network.getNodeAt(param.pointer.DOM); // вершина под событием
+        let properties = getVisualNodeProperties(currentNodeId)
+        realID = parseInt(properties.id)
+
+        // ставим выбранной нужную вершину и симулируем клик по select-ам        
+        if (realID != NaN) { 
+            // форма создания ребра - во второй select    
+            document.getElementById('relationshipEnd').value = realID
+            document.getElementById('relationshipEnd').dispatchEvent(new MouseEvent('change'))             
+        }        
+    })
+}
 
 /**
  * Привязывает обработчик к клику по вершине.
@@ -765,7 +787,10 @@ function getVisualNodeIdByRealId(realID){
  */
 function setNodeClickHandler(){    
     viz._network.on('click', (param) => {  // по клику на холст
-        if (param.nodes.length > 0) {
+        if (param.nodes.length == 0) {
+            return
+        }
+        if (viz._network.getSelectedNodes().length == 1){  
             nodeIdAtCanvas = param.nodes[0]  // ID вершины на холсте, не совпадает с ID в БД        
             let properties = getVisualNodeProperties(nodeIdAtCanvas)
             realID = parseInt(properties.id)
@@ -789,8 +814,11 @@ function setNodeClickHandler(){
  */
 function setVisEventsHandlers(){
     viz.registerOnEvent("completed", (e)=>{
-        setNodeClickHandler()             
-        //TODO: обработчики на doubleClick, oncontext(правый клик), hold...
+        // разрешим множественное выделение
+        viz._network.interactionHandler.selectionHandler.options.multiselect = true
+
+        setNodeSelectHandler()
+        setNodeClickHandler()                     
     });
 }
 
