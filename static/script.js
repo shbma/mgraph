@@ -576,13 +576,10 @@ function removeNode() {
         })
         .then(() => {
             session.close()
-            updateGraph(true)
-            /* вариант удаления по id без обновления всего графа. 
-            Проблема из-за несовпадения id на холсте и в БД.
-            id = parseInt(document.getElementById("nodeSelect").value)
-            viz._network.selectNodes([id])  // выделяем на холсте узел
+            //updateGraph(true)
+            visualID = getVisualNodeIdByRealId(document.getElementById("nodeSelect").value)            
+            viz._network.selectNodes([visualID])  // выделяем на холсте узел
             viz._network.deleteSelected()   // удаляем его из визуализации
-            */
             updateMenu()
         })
 }
@@ -740,6 +737,25 @@ function getVisualNodeProperties(visualId){
         }
     })
     return props
+}
+
+/**
+ * Находит ID вершины на холсте по переданному ID из базы данных (они существуют независимо)
+ * @param {number} ID вершины в БД
+ * @return {number} ID этой же вершины на холсте
+ */
+function getVisualNodeIdByRealId(realID){
+   visualIdList = Object.keys(viz._nodes)
+   nodes_quantity = visualIdList.length
+    for (i=0; i<nodes_quantity; i++){        
+        visualId = visualIdList[i]
+        let properties = getVisualNodeProperties(viz._nodes[visualId].id)
+        
+        if (parseInt(properties.id) == parseInt(realID)){
+            return visualId
+        }
+    }
+    return -1
 }
 
 
