@@ -10,53 +10,74 @@ let selectorsID = ["relationshipEnd", "relationshipStart",
     "nodeSelect", "oneWayFilterSelector", "depthFilterSelector"]
 let topicsID = ["newTopic", "topic"]
 let serverUrl = "neo4j://176.57.217.75:7687"
-let initialCypher = "MATCH (a) , ()-[r]-() RETURN a, r"
 // будет хранить в реляционной БД
 let communities = []
 let newPropertysLabelCount = 0
 let newPropertysTypeCount = 0
 let config
+let desk = ""
+let deskDefault = "basic"
 let firstNodeID = -1
 let secondNodeID = -1
 let vizualHandlersApplyed = false
 
 function getGraphInfo() {
+    desk = getDeskName()
     getLoginInfo()
     neo4jLogin()
     updateMenu()
-    draw()
+    draw() 
     start()
-    updateGraph()
+    updateGraph(false, true)
 }
 
-function updateGraph(reloadNeeded = false) {
+function updateGraph(reloadNeeded=false, renderNeeded=false) {
+    desk = getDeskName()    
     let session = driver.session()
     session
-        .run(initialCypher)
+        .run(initialCypher())
         .then(result => {
-            if (result.records.length === 0) {
-                console.log("yes")
-                viz.updateWithCypher("MATCH (a) RETURN a")
+            if (result.records.length === 0) {  // актуально, если ребер совсем нет                
+                if (renderNeeded) {
+                    viz.renderWithCypher('MATCH (a {desk:"'+desk+'"}) RETURN a')
+                } else {
+                    viz.updateWithCypher('MATCH (a {desk:"'+desk+'"}) RETURN a')
+                }
             }
-            else
-                viz.updateWithCypher(initialCypher)
+            else if (renderNeeded){
+                viz.renderWithCypher(initialCypher())
+            } else {
+                viz.updateWithCypher(initialCypher())
+            }
         })
         .catch(error => {
             console.log(error)
         })
         .then(() => {
-            if (reloadNeeded)
+            if (reloadNeeded)                
                 viz.reload()            
             setVisEventsHandlers()  // ставим обработчики событий на холсте
             session.close()
         })
 }
 
-function start() {
+/** выдает текст стартового cypher-запроса */
+function initialCypher(){
+    let desk = getDeskName()
+    return 'MATCH (a {desk:"'+desk+'"}), ({desk:"'+desk+'"})-[r]-({desk:"'+desk+'"}) RETURN a, r'
+}
+
+function getDeskName(){
+    let deskValue = document.getElementById("deskSelect").value
+    return deskValue ? deskValue : deskDefault
+}
+
+function start() {   
     document.getElementById("Label").add(new Option("Новый тип"))
     document.getElementById("Type").add(new Option("Новый тип"))
-    fillingSelect("Label", "MATCH (n) RETURN distinct labels(n)", "labels(n)")
-    fillingSelect("Type", "MATCH (a)-[r]->(b) RETURN distinct(type(r))", "(type(r))")
+    fillingSelect("Label", 'MATCH (n {desk:"'+desk+'"}) RETURN distinct labels(n)', 'labels(n)')
+    fillingSelect("Type", 'MATCH (a {desk:"'+desk+'"})-[r]->(b {desk:"'+desk+'"}) RETURN distinct(type(r))', "(type(r))")
+    fillingSelect("deskSelect", 'MATCH (n) RETURN distinct n.desk AS desks', "desks")
     templateChanged(true, 'Label')
     templateChanged(true, 'Type')    
 }
@@ -65,9 +86,9 @@ function fillingSelect(select, cypherCode, captionOfResult) {
     let templateSession = driver.session()
     templateSession
         .run(cypherCode)
-        .then(result => {
+        .then(result => {            
             for(let template of result.records) {
-                let captionOfTemplate = template.get(captionOfResult)
+                let captionOfTemplate = template.get(captionOfResult)                
                 document.getElementById(select).add(new Option(captionOfTemplate))
                 if(select === "Label") {
                     config.labels[captionOfTemplate] = {
@@ -75,7 +96,7 @@ function fillingSelect(select, cypherCode, captionOfResult) {
                         size: "size",
                         community: "community",
                         //image: 'https://visjs.org/images/visjs_logo.png'
-                    }
+                    }                    
                     /*config.labels["Node"] = {  // если индивидуально под вершину
                         caption: "title",
                         size: "size",
@@ -323,6 +344,7 @@ function addNodeByTamplateClick() {
             cypher += ' title: "' + document.getElementById("caption").value + '", '
             cypher += ' id: last_ID+1, '
             cypher += ' community: ' + community_id  + ', '
+            cypher += ' desk: "' + getDeskName() + '", '
             let sizeVal = document.getElementById("size")
                                   .options[document.getElementById("size").selectedIndex]
                                   .value
@@ -471,7 +493,7 @@ function draw() {
             }
         },
         arrows: true,
-        initial_cypher: initialCypher
+        initial_cypher: initialCypher()
     }
 
     viz = new NeoVis.default(config)

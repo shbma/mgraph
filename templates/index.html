@@ -39,6 +39,10 @@
             </fieldset>
 
             <fieldset name="loginInfo" id="loginInfo" class="colRight">
+                <label for="url">Доска:</label><br>                
+                <select id="deskSelect" name="deskSelect" onchange="updateGraph(true, true)">
+                </select><br>
+
                 <label for="url">Сервер:</label><br>
                 <input type="text" id="url" name="url" value="neo4j://176.57.217.75:7687"><br>
 
