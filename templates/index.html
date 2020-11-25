@@ -20,12 +20,8 @@
                 <label for="relationshipStart">Начальная вершина:</label><br>
                 <select id="relationshipStart" name="relationshipStart">
                 </select><br>
-
-                <label for="relationshipEnd">Конечная вершина:</label><br>
-                <select id="relationshipEnd" name="relationshipEnd">
-                </select><br><br>
-
-                <label for="relationshipType">Тип ребра(если удаляете, то не важно):</label><br>
+                
+                <label for="relationshipType">Тип ребра (если удаляете, то не важно):</label><br>
                 <select id="relationshipType" name="relationshipType">
                     <option value="ИСПОЛЬЗУЕТ">Использует</option>
                     <option value="СОДЕРЖИТ">Содержит</option>
@@ -33,6 +29,10 @@
                     <option value="ДОСТАВЛЯЕТ">Доставляет</option>
                     <option value="ПРОВЕРЯЕТ">Проверяет</option>
                 </select><br>
+
+                <label for="relationshipEnd">Конечная вершина:</label><br>
+                <select id="relationshipEnd" name="relationshipEnd">
+                </select><br><br>
 
                 <br><button type="button" onclick="addRelationship()">Добавить</button><br>
                 <br><button type="button" onclick="removeRelationship()">Удалить</button><br>
@@ -62,17 +62,6 @@
                 </ul>
             </fieldset>
 
-            <fieldset name="depthFilter" id="depthFilter" class="colRight">
-                <legend align="left">Фильтр по дальности от вершины</legend>
-                <label for="depthFilterSelector">Начальная вершина:</label><br>
-                <select id="depthFilterSelector" name="depthFilterSelector">
-                </select><br>
-                <label for="depth">Дальность</label><br>
-                <input type="text" id="depth" name="depth"><br>
-                <br><button type="button" onclick="showDepthFilter()">Показать в визуализации</button><br>
-                <br><button type="button" onclick="addDepthFilter()">Добавить в визуализацию</button><br>
-            </fieldset>
-
             <fieldset name="addNodeByTemplate" id="addNodeByTemplate" class="colLeft">
                 <legend align="left">Добавить вершину</legend>
                 <label>Название:</label><br>
@@ -90,6 +79,17 @@
                 <br><button type="button" onclick = "addPropertyClick('Label')">Добавить свойство</button><br>
                 <br><button type="button" onclick="addNodeByTamplateClick()">Добавить вершину</button><br>
             </fieldset>
+
+            <fieldset name="depthFilter" id="depthFilter" class="colRight">
+                <legend align="left">Фильтр по дальности от вершины</legend>
+                <label for="depthFilterSelector">Начальная вершина:</label><br>
+                <select id="depthFilterSelector" name="depthFilterSelector">
+                </select><br>
+                <label for="depth">Дальность</label><br>
+                <input type="text" id="depth" name="depth"><br>
+                <br><button type="button" onclick="showDepthFilter()">Показать в визуализации</button><br>
+                <br><button type="button" onclick="addDepthFilter()">Добавить в визуализацию</button><br>
+            </fieldset>            
 
             <fieldset name="vertex" id="vertex" class="colRight">
                 <legend align="left">Изменить/удалить вершину</legend>
@@ -130,7 +130,7 @@
                 <br><button type="button" onclick="addOneWayFilter()">Добавить в визуализацию</button><br>
             </fieldset>
 
-            <fieldset name="search" id="refresh" class="colLeft">
+            <fieldset name="search" id="refresh" class="colRight">
                 <br><button type="button" onclick="updateGraph(true)">Обновить визуализацию</button><br>
             </fieldset>
 
