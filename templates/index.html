@@ -28,6 +28,7 @@
                     <option value="ФОРМИРУЕТ">Формирует</option>
                     <option value="ДОСТАВЛЯЕТ">Доставляет</option>
                     <option value="ПРОВЕРЯЕТ">Проверяет</option>
+                    <option value="ЯВЛЯЕТСЯ_ПРЕДКОМ">Является предком</option>
                 </select><br>
 
                 <label for="relationshipEnd">Конечная вершина:</label><br>
@@ -130,8 +131,12 @@
                 <br><button type="button" onclick="addOneWayFilter()">Добавить в визуализацию</button><br>
             </fieldset>
 
-            <fieldset name="search" id="refresh" class="colRight">
+            <fieldset name="search" id="refresh" class="colLeft">
                 <br><button type="button" onclick="updateGraph(true)">Обновить визуализацию</button><br>
+            </fieldset>
+
+            <fieldset name="saveCoords" id="saveCoords" class="colLeft">
+                <br><button type="button" onclick="saveCoordinates()">Сохранить координаты</button><br>
             </fieldset>
 
 

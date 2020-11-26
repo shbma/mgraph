@@ -346,6 +346,7 @@ function addNodeByTamplateClick() {
             cypher += ' id: last_ID+1, '
             cypher += ' community: ' + community_id  + ', '
             cypher += ' desk: "' + getDeskName() + '", '
+            cypher += ' x: 0, y: 0, '
             let sizeVal = document.getElementById("size")
                                   .options[document.getElementById("size").selectedIndex]
                                   .value
@@ -568,7 +569,7 @@ function changeNode() {
     var setSession = driver.session()
     setSession
         .run(
-            "MATCH (p:Node {id:" + document.getElementById("nodeSelect").value + "})" +
+            "MATCH (p {id:" + document.getElementById("nodeSelect").value + "})" +
             " SET p.title = \"" + document.getElementById("title").value + "\"" +
             " SET p.description = \"" + document.getElementById("desc").value + "\"" +
             " SET p.use = [\"" + document.getElementById("use").value.split(",").join("\" , \"") + "\"]" +
@@ -584,7 +585,7 @@ function changeNode() {
             updateGraph()
             updateMenu()
         })
-}
+} 
 
 function removeNode() {
     var session = driver.session()    
@@ -615,7 +616,6 @@ function updateMenu() {
     document.getElementById("newDesc").value = ""
     document.getElementById("newUse").value = ""
     document.getElementById("newTopic").add(new Option(text, text, false, false))
-    getTopics()
     getNodes()
 }
 
@@ -657,24 +657,6 @@ function removeRelationship() {
         .then(() => {
             session.close()
             updateGraph(true)
-        })
-}
-
-function getTopics() {
-    var session = driver.session()
-    session
-        .run("MATCH (p) WHERE p.topic IS NOT NULL RETURN DISTINCT p.topic")
-        .then(result => {
-            result.records.forEach(record => {
-                for (let i = 0; i < topicsID.length; i++)
-                    document.getElementById(topicsID[i]).add(new Option("<" + record.get("p.topic") + ">", record.get("p.topic"), false, false))
-            })
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => {
-            session.close()
         })
 }
 
@@ -845,6 +827,16 @@ function setVisEventsHandlers(){
 }
 
 /*=================== END Обработка событий ================*/
+
+/**
+ * Тут будет функция, сохраняющая координаты вершин с холстав в БД
+ */
+function saveCoordinates(){    
+    pos = viz._network.getPositions()  // считаем все координаты всех вершин 
+    // сохраняться в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
+
+    // сформируем длинный запрос и отправим на сервер одной посылкой...
+}
 
 /*
 
