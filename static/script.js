@@ -146,7 +146,8 @@ function templateChanged(isFirstLevel, templateType) {
             .then(result => {
                 for(let property of result.records) {
                     if(property.get("key") !== "title" && property.get("key") !== "size" 
-                        && property.get("key") !== "id" && property.get("key") !== "community") {
+                        && property.get("key") !== "id" && property.get("key") !== "community"
+                        && property.get("key") !== "desk") {
                         document.getElementById("div2" + templateType).innerHTML +=
                         '<label>' + property.get("key") + ':</label><br>' +
                         '<input type = "text" id = "' + property.get("key") + '"><br>'
@@ -413,29 +414,27 @@ function showOneWayFilter() {
         + "})-[:subsection*0..100]->()  RETURN p")
 }
 
-function addDepthFilter() {
+/**
+ * Выбирает вершины на глубину указанную в html-элементе с id='depth'.
+ * @param refresh[boolean] сбрасывать текущую визуализацию или дописать в нее
+ */
+function addDepthFilter(refresh=true) {
     let depth = parseInt(document.getElementById("depth").value)
     if (isNaN(depth)) {
         alert("Глубина должна быть указана целым числом больше нуля")
         return
     }
 
-    for (let i = depth; i >= 0; i--){
-        viz.updateWithCypher("MATCH p = ({id:" + document.getElementById("depthFilterSelector").value
-            + "})-[:subsection*" + i + "]-()  RETURN p")
+    if (refresh) {
+        viz.clearNetwork()    
     }
-}
+    for (let i = depth; i >= 0; i--){
+        let cypher = "MATCH p = ("
+        cypher += '{id:' + document.getElementById("depthFilterSelector").value + ', '
+        cypher += 'desk:"' + getDeskName() + '"' + '})'
+        cypher += '-[:subsection*' + i + ']-()  RETURN p'        
 
-function showDepthFilter() {
-    let depth = parseInt(document.getElementById("depth").value)
-    if (isNaN(depth)) {
-        alert("Глубина должна быть указана целым числом больше нуля")
-        return
-    }
-    viz.clearNetwork()
-    for (let i = depth; i >= 0; i--){
-        viz.updateWithCypher("MATCH p = ({id:" + document.getElementById("depthFilterSelector").value
-            + "})-[:subsection*" + i + "]-()  RETURN p")
+        viz.updateWithCypher(cypher)            
     }
 }
 
@@ -680,9 +679,10 @@ function getTopics() {
 }
 
 function getNodes() {
+    //{desk:"' + getDeskName() + '"}
     var session = driver.session()
     session
-        .run("MATCH (p) RETURN p.id, p.title ORDER BY p.id")
+        .run('MATCH (p) RETURN p.id, p.title ORDER BY p.id')
         .then(result => {
             result.records.forEach(record => {
                 let text = "<" + record.get("p.id") + ">:" + record.get("p.title")
@@ -691,12 +691,12 @@ function getNodes() {
             })
         })
         .catch(error => {
-            console.log(error)
+            console.log(error) 
         })
         .then(() => {
             var subSession = driver.session()
             subSession
-                .run("MATCH (p) RETURN DISTINCT p.topic, p.topicNumber")
+                .run('MATCH (p) RETURN DISTINCT p.topic, p.topicNumber')
                 .then(result => {
                     result.records.forEach(record => {
                         communities[record._fields[1]] = (record._fields[0])
