@@ -812,6 +812,22 @@ function setNodeClickHandler(){
     })
 }
 
+/** Как только закончится стабилизация графа - включаем режим ручной расстановки*/
+function setStabilizedHandler(){
+    viz._network.on('stabilized', (param) => {
+        // отключим физику и сделаем ребрa бесконечно растяжимыми
+        viz._network.physics.physicsEnabled = false
+        viz._network.setOptions({
+            edges: {
+                smooth: {
+                    type: 'continuous' // dynamic, continuous, discrete, diagonalCross, straightCross, horizontal, vertical, curvedCW, curvedCCW, cubicBezier
+                }
+            }
+        })        
+    })    
+}
+
+
 /**
  * Ставит обработчики на элементы холста, как только он прорисовался
  * (до этого объект viz._network равен null)
@@ -822,7 +838,8 @@ function setVisEventsHandlers(){
         viz._network.interactionHandler.selectionHandler.options.multiselect = true
 
         setNodeSelectHandler()
-        setNodeClickHandler()                     
+        setNodeClickHandler()  
+        setStabilizedHandler()                   
     });
 }
 
