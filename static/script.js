@@ -16,7 +16,7 @@ let newPropertysLabelCount = 0
 let newPropertysTypeCount = 0
 let config
 let desk = ""
-let deskDefault = "basic"
+let deskDefault = "Basic"
 let firstNodeID = -1
 let secondNodeID = -1
 let vizualHandlersApplyed = false
@@ -35,19 +35,22 @@ function updateGraph(reloadNeeded=false, renderNeeded=false) {
     desk = getDeskName()    
     let session = driver.session()
     session
-        .run(initialCypher())
+        .run(initialCypher().connected_nodes)
         .then(result => {
             if (result.records.length === 0) {  // актуально, если ребер совсем нет                
                 if (renderNeeded) {
-                    viz.renderWithCypher('MATCH (a {desk:"'+desk+'"}) RETURN a')
+                    console.log('1')
+                    viz.renderWithCypher(initialCypher().nodes)
                 } else {
-                    viz.updateWithCypher('MATCH (a {desk:"'+desk+'"}) RETURN a')
+                    viz.updateWithCypher(initialCypher().nodes)
                 }
             }
             else if (renderNeeded){
-                viz.renderWithCypher(initialCypher())
+                viz.renderWithCypher(initialCypher().connected_nodes)
+                viz.updateWithCypher(initialCypher().nodes)
             } else {
-                viz.updateWithCypher(initialCypher())
+                viz.updateWithCypher(initialCypher().connected_nodes)
+                viz.updateWithCypher(initialCypher().nodes)
             }
         })
         .catch(error => {
@@ -61,34 +64,59 @@ function updateGraph(reloadNeeded=false, renderNeeded=false) {
         })
 }
 
-/** выдает текст стартового cypher-запроса */
+/** выдает тексты стартового cypher-запроса */
 function initialCypher(){
-    let desk = getDeskName()
-    return 'MATCH (a {desk:"'+desk+'"}), ({desk:"'+desk+'"})-[r]-({desk:"'+desk+'"}) RETURN a, r'
+    let desk = getDeskName()        
+    //connected_nodes выдаст только связанные между собой узлы, одиночные - нет
+    return {
+        'connected_nodes': 'MATCH (a)-[r]-(b) WHERE ' 
+                    + deskCondition('a') + ' AND '
+                    + deskCondition('b') + ' RETURN a, r',
+        'nodes': 'MATCH (a) WHERE ' + deskCondition('a') + ' RETURN a'
+        }
 }
 
 function getDeskName(){
     let deskValue = document.getElementById("deskSelect").value
-    return deskValue ? deskValue : deskDefault
+    return deskValue ? deskValue : deskDefault    
 }
+
+/** 
+ * Доп.условие к cypher запросам для сужения результатов до конкретной доски.
+ * @param{string} node - обозначение узла вершины, проверяемой на принадлежность к доске
+ * @param{string} desk - обозначение узла самой доски.
+ */
+function deskCondition(node='a', desk=''){
+    let deskName = getDeskName()
+    return ' ('+node+')<-[:subsection {type:"СОДЕРЖИТ"}]-('+desk+':Доска {title:"'+deskName+'"}) '    
+}
+/*
+| (:Доска { id: 128, type: "Предметная", title: "Math"})            
+| (:Доска { id: 129, type: "Предметная", title: "Basic"})           
+| (:Доска { id: 130, type: "Типология", title: "Типология Знания"}) 
+| (:Доска { id: 131, type: "Типология", title: "Типология Ядра"}) 
+*/
 
 function start() {   
     document.getElementById("Label").add(new Option("Новый тип"))
     document.getElementById("Type").add(new Option("Новый тип"))
-    fillingSelect("Label", 'MATCH (n {desk:"'+desk+'"}) RETURN distinct labels(n)', 'labels(n)')
-    fillingSelect("Type", 'MATCH (a {desk:"'+desk+'"})-[r]->(b {desk:"'+desk+'"}) RETURN distinct(type(r))', "(type(r))")
-    fillingSelect("deskSelect", 'MATCH (n) RETURN distinct n.desk AS desks', "desks")
+    fillingSelect("Label", 'MATCH (n) WHERE '+deskCondition('n')+' RETURN distinct labels(n)', 'labels(n)')
+    fillingSelect("Type", 'MATCH (a)-[r]->(b) WHERE ' 
+            + deskCondition('a') + ' AND '
+            + deskCondition('b') + ' RETURN distinct(type(r))', "(type(r))")    
+    fillingSelect("deskSelect", 'MATCH (n:Доска) RETURN distinct n.title AS desks', "desks")
     templateChanged(true, 'Label')
     templateChanged(true, 'Type')    
 }
 
-function fillingSelect(select, cypherCode, captionOfResult) {
+function fillingSelect(select, cypherCode, captionOfResult) {    
     let templateSession = driver.session()
     templateSession
         .run(cypherCode)
-        .then(result => {            
-            for(let template of result.records) {
-                let captionOfTemplate = template.get(captionOfResult)                
+        .then(result => {       
+            if (result.records == 0) console.log('no results')     
+            for(let template of result.records) {                
+                let captionOfTemplate = template.get(captionOfResult)                                
                 document.getElementById(select).add(new Option(captionOfTemplate))
                 if(select === "Label") {
                     config.labels[captionOfTemplate] = {
@@ -124,10 +152,14 @@ function templateChanged(isFirstLevel, templateType) {
         + '" onChange="templateChanged(false, \'' + templateType + '\')"></select><br>'
         document.getElementById("extends" + templateType).add(new Option("Не унаследован"))
         if(templateType === "Label") {
-            fillingSelect("extends" + templateType, "MATCH (n) RETURN distinct labels(n)", "labels(n)")
+            fillingSelect("extends" + templateType, 
+                'MATCH (n)  WHERE ' + deskCondition('n') + ' RETURN distinct labels(n)', "labels(n)")
         }
         else {
-            fillingSelect("extends" + templateType, "MATCH (a)-[r]->(b) RETURN distinct(type(r))", "(type(r))")
+            fillingSelect("extends" + templateType, 
+                'MATCH (a)-[r]->(b) WHERE ' 
+                + deskCondition('a') + ' AND '
+                + deskCondition('b') + ' RETURN distinct(type(r))', "(type(r))")
         }
     }
     else {
@@ -139,8 +171,16 @@ function templateChanged(isFirstLevel, templateType) {
         let extendsTemplatesSelector = document.getElementById("extends" + templateType)
         let nameOfLabel = isFirstLevel ? templatesSelector.options[templatesSelector.selectedIndex].text
         : extendsTemplatesSelector.options[extendsTemplatesSelector.selectedIndex].text
-        let cypher = templateType === "Label" ? "MATCH (a:" + nameOfLabel + ") UNWIND keys(a) AS key RETURN distinct key"
-        : "match ()-[r:" + nameOfLabel + "]->() Unwind keys(r) AS key return distinct key"
+        let cypher = templateType 
+        if (cypher === "Label") {
+            cypher = 'MATCH (a:' + nameOfLabel + ') WHERE ' + deskCondition('a') 
+                + ' UNWIND keys(a) AS key RETURN distinct key'
+        }
+        else {
+            cypher = "match (a)-[r:" + nameOfLabel + "]->(b) WHERE " 
+                + deskCondition('a') + " AND "
+                + deskCondition('b') + " Unwind keys(r) AS key return distinct key"
+        }
         session
             .run(cypher)
             .then(result => {
@@ -344,15 +384,15 @@ function addNodeByTamplateClick() {
 
             cypher += ' title: "' + document.getElementById("caption").value + '", '
             cypher += ' id: last_ID+1, '
-            cypher += ' community: ' + community_id  + ', '
-            cypher += ' desk: "' + getDeskName() + '", '
+            cypher += ' community: ' + community_id  + ', '            
             cypher += ' x: 0, y: 0, '
             let sizeVal = document.getElementById("size")
                                   .options[document.getElementById("size").selectedIndex]
                                   .value
-            cypher += ' size:' + sizeVal + '})'
+            cypher += ' size:' + sizeVal + '}) '
+            cypher += 'CREATE ' + deskCondition('a')  // привяжем к доске
             
-            // добавляем в граф вершину с заданным типом и свойствами
+            // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
             var subSession = driver.session()
             subSession
                 .run(cypher)
@@ -419,7 +459,9 @@ function showOneWayFilter() {
  * Выбирает вершины на глубину указанную в html-элементе с id='depth'.
  * @param refresh[boolean] сбрасывать текущую визуализацию или дописать в нее
  */
+ // TODO: переписать условие с использованием deskCondition
 function addDepthFilter(refresh=true) {
+
     let depth = parseInt(document.getElementById("depth").value)
     if (isNaN(depth)) {
         alert("Глубина должна быть указана целым числом больше нуля")
@@ -490,10 +532,10 @@ function draw() {
                 caption: "type",
                 thickness: "thickness",
                 title_properties: false
-            }
+            } 
         },
         arrows: true,
-        initial_cypher: initialCypher()
+        initial_cypher: initialCypher().connected_nodes
     }
 
     viz = new NeoVis.default(config)
@@ -760,6 +802,62 @@ function getVisualNodeIdByRealId(realID){
     return -1
 }
 
+/**
+ * Сохраняет координаты вершин с холстав в БД
+ */
+function saveCoordinates(){        
+    let pos = viz._network.getPositions()  // считаем все координаты всех вершин 
+    // в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
+    
+    //соберем все в один запрос
+    let cypherMatch = 'MATCH '
+    let cypherSET = ' SET '
+    Object.keys(pos).forEach(visualId => {        
+        id = parseInt(getVisualNodeProperties(visualId).id)
+        nodeName = 'id' + id  // 
+        cypherMatch += '(' + nodeName +' {id: ' + id + '}), '
+        cypherSET += nodeName + '.x=' + pos[visualId].x + ', ' 
+        cypherSET += nodeName + '.y=' + pos[visualId].y + ', ' 
+    }) 
+    cypherMatch = cypherMatch.slice(0, -2); //отрежем ', ' с хвостов
+    cypherSET = cypherSET.slice(0, -2)
+    
+    cypher = cypherMatch + cypherSET    
+    
+    //и отправим на сервер
+    var session = driver.session()    
+    session
+        .run(cypher)
+        .then(result => {})
+        .catch(error => {
+            console.log(error)
+        })
+        .then(() => session.close())
+}
+
+/** 
+ * Расставляет вершины по сохраненным ранее в базе координатам
+ */
+function restoreCoordinates(){
+    var session = driver.session()    
+    session
+        .run(initialCypher().connected_nodes)
+        .then(result => {          
+            result.records.forEach(record => {                
+                let x = record.get("a").properties.x.low
+                let y = record.get("a").properties.y.low                
+                if (x != 0 || y!= 0) {
+                    let visualID = getVisualNodeIdByRealId(record.get("a").properties.id.low)                                
+                    viz._network.moveNode(visualID, x, y) 
+                }
+            })            
+        })
+        .catch(error => {
+            console.log(error)
+        })
+        .then(() => session.close())    
+}
+
 /*=================== Обработка событий ================*/
 
 /**
@@ -812,6 +910,24 @@ function setNodeClickHandler(){
     })
 }
 
+/** Как только закончится стабилизация графа - включаем режим ручной расстановки вершин*/
+function setStabilizedHandler(){
+    viz._network.on('stabilized', (param) => {
+        // отключим физику и сделаем ребрa бесконечно растяжимыми
+        viz._network.physics.physicsEnabled = false
+        viz._network.setOptions({
+            edges: {
+                smooth: {
+                    type: 'continuous' // dynamic, continuous, discrete, diagonalCross, straightCross, horizontal, vertical, curvedCW, curvedCCW, cubicBezier
+                }
+            }
+        }) 
+
+        restoreCoordinates()  // расставим вершины по сохраненным позициям
+    })    
+}
+
+
 /**
  * Ставит обработчики на элементы холста, как только он прорисовался
  * (до этого объект viz._network равен null)
@@ -822,37 +938,11 @@ function setVisEventsHandlers(){
         viz._network.interactionHandler.selectionHandler.options.multiselect = true
 
         setNodeSelectHandler()
-        setNodeClickHandler()                     
+        setNodeClickHandler()  
+        setStabilizedHandler()                   
     });
 }
 
 /*=================== END Обработка событий ================*/
 
-/**
- * Тут будет функция, сохраняющая координаты вершин с холстав в БД
- */
-function saveCoordinates(){    
-    pos = viz._network.getPositions()  // считаем все координаты всех вершин 
-    // сохраняться в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
 
-    // сформируем длинный запрос и отправим на сервер одной посылкой...
-}
-
-/*
-
-// заметки по сохранению состояния
-
-//считать все координаты всех вершин 
-pos = viz._network.getPositions()
-// сохраняться в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
-
- 
-// переместить вершины согласно координатам из объекта pos
-for (i=0; i<Object.keys(pos).length; i++) {
-    viz._network.moveNode(i, pos[i].x, pos[i].y)
-}
-
-НО: если в промежутке между сохранение и чтением кол-во узлов поменяют,
-координаты применятся не к тем узлам. Вывод - хранить координаты
-индивидуально в узлах
-*/
