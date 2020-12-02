@@ -20,6 +20,20 @@ let deskDefault = "Basic"
 let firstNodeID = -1
 let secondNodeID = -1
 let vizualHandlersApplyed = false
+let selectedNode
+let lastLabel
+let properties = []
+let finishedUpdateCount
+let reloadNeeded
+
+function addOption(optionName) {
+    for (option of Label.options) {
+        if (option.text == optionName) {
+            return
+        }
+    }
+    Label.add(new Option(optionName, optionName, false, true))
+}
 
 function getGraphInfo() {
     desk = getDeskName()
@@ -29,6 +43,7 @@ function getGraphInfo() {
     draw() 
     start()
     updateGraph(false, true)
+    setVisEventsHandlers()  // ставим обработчики событий на холсте
 }
 
 function updateGraph(reloadNeeded=false, renderNeeded=false) {
@@ -59,7 +74,6 @@ function updateGraph(reloadNeeded=false, renderNeeded=false) {
         .then(() => {
             if (reloadNeeded)                
                 viz.reload()            
-            setVisEventsHandlers()  // ставим обработчики событий на холсте
             session.close()
         })
 }
@@ -113,7 +127,11 @@ function fillingSelect(select, cypherCode, captionOfResult) {
     let templateSession = driver.session()
     templateSession
         .run(cypherCode)
-        .then(result => {       
+        .then(result => {                   
+            if(result.records.length == 0 && select == "deskSelect") {
+                deskSelect.add(new Option("Basic"))
+                return
+            }
             if (result.records == 0) console.log('no results')     
             for(let template of result.records) {                
                 let captionOfTemplate = template.get(captionOfResult)                                
@@ -141,6 +159,7 @@ function fillingSelect(select, cypherCode, captionOfResult) {
 }
 
 function templateChanged(isFirstLevel, templateType) {
+    properties = []
     document.getElementById("div3" + templateType).innerHTML = ""
     let templatesSelector = document.getElementById(templateType)
     if(templatesSelector.options[templatesSelector.selectedIndex].text === "Новый тип" && isFirstLevel) {
@@ -187,10 +206,12 @@ function templateChanged(isFirstLevel, templateType) {
                 for(let property of result.records) {
                     if(property.get("key") !== "title" && property.get("key") !== "size" 
                         && property.get("key") !== "id" && property.get("key") !== "community"
-                        && property.get("key") !== "desk") {
+                        && property.get("key") !== "desk" && property.get("key") !== "x"
+                        && property.get("key") !== "y") {
                         document.getElementById("div2" + templateType).innerHTML +=
                         '<label>' + property.get("key") + ':</label><br>' +
                         '<input type = "text" id = "' + property.get("key") + '"><br>'
+                        properties.push(replacementSpaces(property.get("key")))
                     }
                 }
             })
@@ -339,8 +360,7 @@ function handleTemplateName(){
         } else {
             result.isFirstLevel = true
             result.name = replacementSpaces(document.getElementById("nameOfLabel").value)
-            document.getElementById("extendsLabel").add(new Option(result.name))        
-            templatesSelector.add(new Option(result.name))
+            addOption(result.name)
             config.labels[result.name] = {
                 caption: "title",
                 size: "size",
@@ -521,10 +541,10 @@ function draw() {
         server_user: username,
         server_password: password,
         labels: {  // не влияет на ситуацию - config.labels перезаписывается в других местах 
-            "Node": {
+            "Default": {
                 caption: "title",
                 size: "size",
-                community: "topicNumber"
+                community: "community"
             }
         }, 
         relationships: {
@@ -887,15 +907,209 @@ function setNodeSelectHandler(){
  * Привязывает обработчик к клику по вершине.
  * Кликнутая вершина ставится выбранной в формах c select-ами по вершинам
  */
-function setNodeClickHandler(){    
-    viz._network.on('click', (param) => {  // по клику на холст
+
+function updateGraphAfterClick() {
+    finishedUpdateCount++
+    if (finishedUpdateCount == 2) {
+        if (reloadNeeded) {
+            viz.reload()
+        }
+        else {
+            updateGraph()
+        }
+        newPropertysLabelCount = 0
+        templateChanged(true, "Label")
+    }
+}
+
+function createNode(templateInfo, nodeID, communityID, param) {
+    let createSession = driver.session()
+    createSession
+        .run(`create (a:${templateInfo.name}
+            {
+                title: "Вершина${nodeID}",
+                id: ${nodeID},
+                size: ${size.value},
+                community: ${communityID},
+                x: ${param.pointer.DOM.x},
+                y: ${param.pointer.DOM.y}})
+                create ${deskCondition("a")}
+            `)
+        .catch(error => console.log(error))
+        .then(() => {
+            createSession.close()
+            caption.value = `Вершина${nodeID}`
+            selectedNode = nodeID
+            lastLabel = templateInfo.name
+            updateGraphAfterClick()
+        })
+}
+
+
+function getInfo(templateInfo, param) {
+    let nodeID
+    let communityID
+    let getIDSession = driver.session()
+    getIDSession
+        .run("match(a) return max(a.id)")
+        .then(result => nodeID = Number(result.records[0].get("max(a.id)")) + 1)
+        .catch(error => console.log(error))
+        .then(() => {
+            getIDSession.close()
+            if (communityID) {
+                createNode(templateInfo, nodeID, communityID, param)
+            }
+        })
+    let getCommunitySession = driver.session()
+    getCommunitySession
+        .run(`match(a:${templateInfo.name}) return a.community`)
+        .then(result => communityID = Number(result.records[0].get("a.community")))
+        .catch(error => console.log(error))
+        .then(() => {
+            getCommunitySession.close()
+            if (nodeID) {
+                createNode(templateInfo, nodeID, communityID, param)
+            }
+        })
+}
+
+function readPropertysForSet(variable="a.", delimiter=" =") {
+    let cypher = ""
+    for (let property of properties) {
+        cypher += `${variable}${property}${delimiter} "${document.getElementById(property).value}", `
+    }
+    for (let i = 0; i < newPropertysLabelCount; i++) {
+        if (document.getElementById(`propertyLabel${i}`).value) {
+            cypher += `${variable}${document.getElementById(`propertyLabel${i}`).value}${delimiter}
+            "${document.getElementById(`propertyLabel${i}Value`).value}", `
+        }
+    }
+    return cypher
+}
+
+function editLabel(templateInfo, communityID) {
+    let createSession = driver.session()
+    createSession
+        .run(`create (a:${templateInfo.name} {
+            ${readPropertysForSet("", ":")}
+            title: "${caption.value}",
+            size: ${size.value},
+            id: ${selectedNode},
+            x: ${DOMX.value},
+            y: ${DOMY.value},
+            community: ${communityID}})
+            create ${deskCondition("a")}
+        `)
+        .catch(error => console.log(error))
+        .then(() => {
+            createSession.close()
+            reloadNeeded = true
+            updateGraphAfterClick()
+        })
+}
+/**
+ * Привязывает обработчик к клику по вершине.
+ * Кликнутая вершина ставится выбранной в формах c select-ами по вершинам
+ */
+async function setNodeClickHandler(){
+    viz._network.once('click', (param) => {  // по клику на холст
+        reloadNeeded = false
+        finishedUpdateCount = 0
+        let templateInfo = handleTemplateName()
+        let nodeID
+        let communityID
+        if (templateInfo.error) {
+            templateInfo.name = "Default"
+        }
+        if (templateInfo.name == lastLabel) {
+            let setSession = driver.session()
+            setSession
+                .run(`match(a {id: ${selectedNode}}) set
+                    ${readPropertysForSet()}
+                    a.title = "${caption.value}",
+                    a.size = ${size.value},
+                    a.x = ${DOMX.value},
+                    a.y = ${DOMY.value}`)
+                .catch(error => console.log(error))
+                .then(() => {
+                    setSession.close()
+                    updateGraphAfterClick()
+                })
+        }
+        else {
+            let deleteRelationsSession = driver.session()
+            deleteRelationsSession
+                .run(`match(a {id: ${selectedNode}})-[r]-() delete r`)
+                .catch(error => console.log(error))
+                .then(() => {
+                    deleteRelationsSession.close()
+                    let deleteNodeSession = driver.session()
+                    deleteNodeSession
+                        .run(`match(a {id: ${selectedNode}}) delete a`)
+                })
+            let communitySession = driver.session()
+            communitySession
+                .run(`match(a:${templateInfo.name}) return a.community`)
+                .catch(error => console.log(error))
+                .then(result => {
+                    if (result.records[0]) {
+                        communityID = result.records[0].get("a.community")
+                        communitySession.close()
+                        editLabel(templateInfo, communityID)
+                    }
+                    else {
+                        communitySession.close()
+                        let lastCommunitySession = driver.session()
+                        lastCommunitySession
+                            .run("match(a) return max(a.community)")
+                            .catch(error => console.log(error))
+                            .then(result => {
+                                communityID = Number(result.records[0].get("max(a.community)")) + 1
+                                lastCommunitySession.close()
+                                editLabel(templateInfo, communityID)
+                            })
+                    }
+                })
+        }
         if (param.nodes.length == 0) {
-            return
+            if (templateInfo.isNew) {
+                if (templateInfo.error) {
+                    addOption("Default")
+                    let infoSession = driver.session()
+                    infoSession
+                        .run("match(a) return max(a.id)")
+                        .then(result => nodeID = Number(result.records[0].get("max(a.id)")) + 1)
+                        .catch(error => {
+                            console.log(error)
+                        })
+                        .then(() => {
+                            infoSession.close()
+                            createNode(templateInfo, nodeID, -1, param)
+                        })
+                }
+                else {
+                    let infoSession = driver.session()
+                    infoSession
+                        .run("match(a) return max(a.id), max(a.community)")
+                        .then(result => {
+                            nodeID = Number(result.records[0].get("max(a.id)")) + 1
+                            communityID = Number(result.records[0].get("max(a.community)")) + 1
+                        })
+                        .catch(error => console.log(error))
+                        .then(() => {
+                            infoSession.close()
+                            createNode(templateInfo, nodeID, communityID, param)
+                        })
+                }
+            }
+            else {
+                getInfo(templateInfo, param)
+            }
         }
         if (viz._network.getSelectedNodes().length == 1){  
             nodeIdAtCanvas = param.nodes[0]  // ID вершины на холсте, не совпадает с ID в БД        
-            let properties = getVisualNodeProperties(nodeIdAtCanvas)
-            realID = parseInt(properties.id)
+            let nodeProperties = getVisualNodeProperties(nodeIdAtCanvas)
+            realID = parseInt(nodeProperties.id)
             if (realID != NaN) {
                 // ставим выбранной нужную вершину и симулируем клик по select-ам
                 document.getElementById('nodeSelect').value = realID
@@ -903,7 +1117,25 @@ function setNodeClickHandler(){
 
                 document.getElementById('relationshipStart').value = realID
                 document.getElementById('relationshipStart').dispatchEvent(new MouseEvent('change'))
-
+                
+                selectedNode = nodeProperties.id
+                let session = driver.session()
+                session
+                    .run(`match(a {id: ${nodeProperties.id}}) return labels(a)`)
+                    .catch(error => console.log(error))
+                    .then(result => {
+                        Label.value = result.records[0].get("labels(a)")
+                        session.close()
+                        templateChanged(true, "Label")
+                        caption.value = nodeProperties.title
+                        DOMX.value = nodeProperties.x
+                        DOMY.value = nodeProperties.y
+                        console.log(properties)
+                        for (let property of properties) {
+                            document.getElementById(property).value = nodeProperties[property]
+                        }
+                        updateGraphAfterClick()
+                    })
             }
         }
         
