@@ -9,6 +9,7 @@
     <script src="https://cdn.neo4jlabs.com/neovis.js/v1.5.0/neovis.js"></script>
     <script src="https://unpkg.com/neo4j-driver" type="text/javascript"></script>
     <script src="{{ url_for('static', filename='script.js') }}" type="text/javascript"></script>
+    
 </head>
 
 <body style="overflow: hidden;">
@@ -75,6 +76,10 @@
                 <label>Тип:</label><br>
                 <select id="Label" onChange="templateChanged(true, 'Label')"></select><br>
                 <div id = "div1Label"></div>
+                <label>x:</label>
+                <input type="text" id="DOMX"><br>
+                <label>y:</label>
+                <input type="text" id="DOMY"><br>
                 <div id = "div2Label"></div>
                 <div id = "div3Label"></div>
                 <br><button type="button" onclick = "addPropertyClick('Label')">Добавить свойство</button><br>
