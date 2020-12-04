@@ -20,6 +20,11 @@ let deskDefault = "Basic"
 let firstNodeID = -1
 let secondNodeID = -1
 let vizualHandlersApplyed = false
+const deskInterest = {
+    RELATION: 0,
+    DESK: 1,
+    RELDESK : 2
+}
 
 function getGraphInfo() {
     desk = getDeskName()
@@ -84,18 +89,42 @@ function getDeskName(){
 /** 
  * Доп.условие к cypher запросам для сужения результатов до конкретной доски.
  * @param{string} node - обозначение узла вершины, проверяемой на принадлежность к доске
- * @param{string} desk - обозначение узла самой доски.
+ * @param{string} desk - обозначение узла самой доски. 
+ * @param{string} relation - обозначение отношения привязки к доске
+ * @param{string} interest - на что ориентирован выдаваемый кусок запроса
+ * @param{object} relProperties - дополнительные свойства ребра (если ориентируемся на ребро)
  */
-function deskCondition(node='a', desk=''){
+function deskCondition(node='a', desk='', relation='', interest=deskInterest.RELDESK, relProperties={}){
     let deskName = getDeskName()
-    return ' ('+node+')<-[:subsection {type:"СОДЕРЖИТ"}]-('+desk+':Доска {title:"'+deskName+'"}) '    
+    let props = stringify(relProperties)
+    props = props ? ', ' + props : '' 
+        
+    switch (interest){
+        case deskInterest.RELDESK:
+            return ' ('+node+')<-['+relation+':subsection {type:"СОДЕРЖИТ"}]-('+desk+':Доска {title:"'+deskName+'"}) '    
+        case deskInterest.RELATION:
+            return ' ('+node+')<-['+relation+':subsection {type:"СОДЕРЖИТ" '+props+'}]-('+desk+') '        
+        case deskInterest.DESK:
+            return '('+desk+':Доска {title:"'+deskName+'"})' 
+    }
 }
-/*
-| (:Доска { id: 128, type: "Предметная", title: "Math"})            
-| (:Доска { id: 129, type: "Предметная", title: "Basic"})           
-| (:Доска { id: 130, type: "Типология", title: "Типология Знания"}) 
-| (:Доска { id: 131, type: "Типология", title: "Типология Ядра"}) 
+
+/**
+ * Выдает строковое представление входного объекта
+ * @param{object} объект из пар ключ-значение. Например {x:10, y:22.4, name:"HotPoint"}
+ * @return{string} строковое представление объекта. Например 'x:10, y:22.4, name:"HotPoint"'
 */
+function stringify(properties){
+    props=[]; 
+    Object.keys(properties).forEach((k)=>{
+        val = properties[k]
+        if (typeof(val) != 'number') {
+            val = '"' + val + '"'
+        }
+        props.push(k+":"+val)
+    }); 
+    return props.join(',')
+}
 
 function start() {   
     document.getElementById("Label").add(new Option("Новый тип"))
@@ -370,7 +399,8 @@ function addNodeByTamplateClick() {
             let community = result.records[0].get("n.community")
 
             let cypher ="MATCH (n) WITH max(n.community) AS last_community, max(n.id) AS last_ID " 
-            cypher +="CREATE (a:" + templateInfo.name
+            cypher += "MATCH " + deskCondition('', 'd', interest=deskInterest.DESK) 
+            cypher +=" CREATE (a:" + templateInfo.name
             
             // собираем в запрос свойства
             let propertys = readPropertys("Label")
@@ -390,8 +420,9 @@ function addNodeByTamplateClick() {
                                   .options[document.getElementById("size").selectedIndex]
                                   .value
             cypher += ' size:' + sizeVal + '}) '
-            cypher += 'CREATE ' + deskCondition('a')  // привяжем к доске
-            
+            let coords = {x:0, y:0}
+            cypher += 'CREATE ' + deskCondition('a', 'd', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
+
             // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
             var subSession = driver.session()
             subSession
@@ -808,22 +839,26 @@ function getVisualNodeIdByRealId(realID){
 function saveCoordinates(){        
     let pos = viz._network.getPositions()  // считаем все координаты всех вершин 
     // в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
-    
-    //соберем все в один запрос
-    let cypherMatch = 'MATCH '
+
+    // соберем все в один запрос
+    let cypherMatchNodes = ' MATCH '
+    let cypherMatchRelations = ' MATCH '
     let cypherSET = ' SET '
     Object.keys(pos).forEach(visualId => {        
         id = parseInt(getVisualNodeProperties(visualId).id)
-        nodeName = 'id' + id  // 
-        cypherMatch += '(' + nodeName +' {id: ' + id + '}), '
-        cypherSET += nodeName + '.x=' + pos[visualId].x + ', ' 
-        cypherSET += nodeName + '.y=' + pos[visualId].y + ', ' 
-    }) 
-    cypherMatch = cypherMatch.slice(0, -2); //отрежем ', ' с хвостов
+        nodeName = 'id' + id
+        relName = 'r' + id 
+        cypherMatchNodes += '(' + nodeName +' {id: ' + id + '}), '
+        cypherMatchRelations += deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ', '
+        cypherSET += relName + '.x=' + pos[visualId].x + ', ' 
+        cypherSET += relName + '.y=' + pos[visualId].y + ', ' 
+    })
+    cypherMatchNodes = cypherMatchNodes.slice(0, -2); //отрежем ', ' с хвостов
+    cypherMatchRelations = cypherMatchRelations.slice(0, -2);
     cypherSET = cypherSET.slice(0, -2)
     
-    cypher = cypherMatch + cypherSET    
-    
+    cypher = cypherMatchNodes + cypherMatchRelations + cypherSET 
+ 
     //и отправим на сервер
     var session = driver.session()    
     session
@@ -840,14 +875,16 @@ function saveCoordinates(){
  */
 function restoreCoordinates(){
     var session = driver.session()    
+    let cypher = 'MATCH ' + deskCondition('a', 'd', 'r') + ' RETURN a.id AS nodeID, r.x AS x, r.y AS y'    
     session
-        .run(initialCypher().connected_nodes)
+        .run(cypher)
         .then(result => {          
-            result.records.forEach(record => {                
-                let x = record.get("a").properties.x.low
-                let y = record.get("a").properties.y.low                
+            result.records.forEach(record => { 
+                let x = record.get('x').low                                    
+                let y = record.get('y').low
+                let realID = record.get('nodeID').low                
                 if (x != 0 || y!= 0) {
-                    let visualID = getVisualNodeIdByRealId(record.get("a").properties.id.low)                                
+                    let visualID = getVisualNodeIdByRealId(realID)                                
                     viz._network.moveNode(visualID, x, y) 
                 }
             })            
