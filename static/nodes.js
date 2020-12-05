@@ -52,7 +52,7 @@ function addNodeByTamplateClick() {
             let community = result.records[0].get("n.community")
 
             let cypher ="MATCH (n) WITH max(n.community) AS last_community, max(n.id) AS last_ID " 
-            cypher += "MATCH " + deskCondition('', 'd', interest=deskInterest.DESK) 
+            cypher += "MATCH " + deskCondition('', 'd', '', interest=deskInterest.DESK) 
             cypher +=" CREATE (a:" + templateInfo.name
             
             // собираем в запрос свойства
@@ -74,7 +74,7 @@ function addNodeByTamplateClick() {
                                   .value
             cypher += ' size:' + sizeVal + '}) '
             let coords = {x:0, y:0}
-            cypher += 'CREATE ' + deskCondition('a', 'd', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
+            cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
 
             // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
             var subSession = driver.session()
