@@ -1,0 +1,16 @@
+<fieldset name="loginInfo" id="loginInfo" class="colRight">
+    <label for="url">Доска:</label><br>                
+    <select id="deskSelect" name="deskSelect" onchange="updateGraph(true, true)">
+    </select><br>
+
+    <label for="url">Сервер:</label><br>
+    <input type="text" id="url" name="url" value="neo4j://176.57.217.75:7687"><br>
+
+    <label for="username">Имя пользователя :</label><br>
+    <input type="text" id="username" name="username" value="neo4j"><br>
+
+    <label for="password">Пароль:</label><br>
+    <input type="text" id="password" name="password" value="miner2"><br>
+
+    <br><button type="button" onclick="getGraphInfo()">Вход</button><br>
+</fieldset>

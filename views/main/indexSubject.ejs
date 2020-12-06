@@ -1,0 +1,37 @@
+<%- include('head') %>
+
+<body style="overflow: hidden;">        
+    <div id="menu" scroll="yes">
+        <form id="graphMenu" name="graphMenu">
+            <%- include('../relations/relations') %>
+
+            <%- include('../login')  %>                      
+
+            <%- include('../search') %>	
+
+            <%- include('../nodes/addNode') %>
+
+            <%- include('../filters/depth') %>            
+
+            <%- include('../nodes/editNode') %>            
+
+            <%- include('../filters/section') %>
+
+            <fieldset name="search" id="refresh" class="colLeft">
+                <br><button type="button" onclick="updateGraph(true)">Обновить визуализацию</button><br>
+            </fieldset>
+
+            <fieldset name="saveCoords" id="saveCoords" class="colLeft">
+                <br><button type="button" onclick="saveCoordinates()">Сохранить координаты</button><br>
+            </fieldset>
+
+            <%- include('removeInFuture') %>
+
+        </form>
+    </div>
+
+    <div id="viz"></div>
+
+</body>
+
+</html>
