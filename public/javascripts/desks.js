@@ -26,3 +26,8 @@ function deskCondition(node='a', desk='', relation='', interest=deskInterest.REL
             return '('+desk+':Доска {title:"'+deskName+'"})' 
     }
 }
+
+/** обработчик события смены доски */
+function deskChange(){    
+    updateGraph(true, true)
+}

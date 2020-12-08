@@ -41,10 +41,11 @@ function addNodeByTamplateClick() {
     if(document.getElementById("caption").value === "") {
         return
     }
-    templateInfo = handleTemplateName()
+    templateInfo = handleTemplateName()    
     if (templateInfo.error) {
         return
     }
+    console.log("MATCH (n:" + templateInfo.name + ") RETURN n.community")
     let session = driver.session()
     session
         .run("MATCH (n:" + templateInfo.name + ") RETURN n.community")
@@ -75,6 +76,7 @@ function addNodeByTamplateClick() {
             cypher += ' size:' + sizeVal + '}) '
             let coords = {x:0, y:0}
             cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
+            console.log(cypher)
 
             // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
             var subSession = driver.session()
@@ -94,7 +96,7 @@ function addNodeByTamplateClick() {
 
         })
         .catch(error => {
-            console.log(error)
+            console.log(error)            
             alert("Ошибка запроса к БД. Не удалось прочитать тип вершины.")            
         })
 

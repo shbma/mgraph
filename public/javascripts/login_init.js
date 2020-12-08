@@ -24,10 +24,10 @@ function initialCypher(){
 function start() {   
     document.getElementById("Label").add(new Option("Новый тип"))
     document.getElementById("Type").add(new Option("Новый тип"))
-    fillingSelect("Label", 'MATCH (n) WHERE '+deskCondition('n')+' RETURN distinct labels(n)', 'labels(n)')
-    fillingSelect("Type", 'MATCH (a)-[r]->(b) WHERE ' 
+    fillingSelect("Label", 'MATCH (n) RETURN distinct labels(n)', 'labels(n)')  // select типов вершин    
+    /*fillingSelect("Type", 'MATCH (a)-[r]->(b) WHERE ' 
             + deskCondition('a') + ' AND '
-            + deskCondition('b') + ' RETURN distinct(type(r))', "(type(r))")    
+            + deskCondition('b') + ' RETURN distinct(type(r))', "(type(r))") */   
     fillingSelect("deskSelect", 'MATCH (n:Доска) RETURN distinct n.title AS desks', "desks")
     templateChanged(true, 'Label')
     templateChanged(true, 'Type')    
