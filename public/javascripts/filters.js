@@ -27,10 +27,9 @@ function addDepthFilter(refresh=true) {
     }
     for (let i = depth; i >= 0; i--){
         let cypher = "MATCH p = ("
-        cypher += '{id:' + document.getElementById("depthFilterSelector").value + ', '
-        cypher += 'desk:"' + getDeskName() + '"' + '})'
+        cypher += '{id:' + document.getElementById("depthFilterSelector").value + '})'
         cypher += '-[:subsection*' + i + ']-()  RETURN p'        
-
+        console.log(cypher)
         viz.updateWithCypher(cypher)            
     }
 }

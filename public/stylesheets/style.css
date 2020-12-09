@@ -1,23 +1,29 @@
+#sidebar.menu-bar{
+    left: 0vw;           
+}
+
 #viz {
-    width: 65vw;
+    width: 66vw;
     height: 100vh;
     position: absolute;
     top: 0;
-    left: 0;
+    left: 17vw;
     border-style: none;
 }
 
-#menu {
+#menu.menu-bar {        
+    left: 83vw;    
+    padding-right: 1vw;
+}
+
+.menu-bar{
     position: absolute;
-    width: 35vw;
-    min-width: 440px;
-    height: 100vh;
     top: 0vh;
-    left: 65vw;
+    width: 17vw;    
+    height: 100vh;
     background-color: rgb(252, 252, 252);
     overflow-y: scroll;
     overflow-x: hidden;
-    padding-right: 1vw;
     box-sizing: border-box;
 }
 
@@ -27,27 +33,27 @@
     position: relative;
 }
 
-#graphMenu>*>* {
+.graphMenu>*>* {
     width: 100%;
 }
 
-#graphMenu>*>textarea {
+.graphMenu>*>textarea {
     width: 99%;
     resize: vertical;    
     text-align: left;
 }
 
-#graphMenu>* {
+.graphMenu>* {
     width: 85%;
     text-align: left;
 }
 
 
-#graphMenu fieldset {
-    width: 42%;
+.graphMenu fieldset {
+    width: 85%;
 }
 
-#graphMenu #addNodeByTemplate {
+.graphMenu #addNodeByTemplate {
     margin-bottom: 24px; 
 }
 
@@ -59,7 +65,7 @@
     float: right;
 }
 
-#graphMenu>*>button {
+.graphMenu>*>button {
     box-shadow: inset 0px 1px 0px 0px #54a3f7;
     background: linear-gradient(to bottom, #007dc1 5%, #0061a7 100%);
     background-color: #007dc1;
@@ -75,12 +81,12 @@
     text-shadow: 0px 1px 0px #154682;
 }
  
-#graphMenu>*>button:hover {
+.graphMenu>*>button:hover {
     background: linear-gradient(to bottom, #0061a7 5%, #007dc1 100%);
     background-color: #0061a7;
 }
 
-#graphMenu>*>button:active {
+.graphMenu>*>button:active {
     position: relative;
     top: 1px;
 }
