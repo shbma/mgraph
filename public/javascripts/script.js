@@ -7,7 +7,6 @@ function updateGraph(reloadNeeded=false, renderNeeded=false) {
         .then(result => {
             if (result.records.length === 0) {  // актуально, если ребер совсем нет                
                 if (renderNeeded) {
-                    console.log('1')
                     viz.renderWithCypher(initialCypher().nodes)
                 } else {
                     viz.updateWithCypher(initialCypher().nodes)

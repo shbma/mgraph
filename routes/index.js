@@ -1,18 +1,11 @@
-var express = require('express');
-var router = express.Router();
+const router = require('express').Router();
 
-router.get('/', function(req, res, next) {
-  res.redirect('/subject');
-});
 
-/* Предметная доска по-умолчанию */
-router.get('/subject', function(req, res, next) {
-  res.render('main/indexSubject', { title: 'mGraph' });
-});
+router.use('/', require('./home'))
 
-/* Доска с типологией*/
-router.get('/typology', function(req, res, next) {
-  res.render('main/indexTypo', { title: 'mGraph' });
-});
+router.use('/users', require('./users'))
 
-module.exports = router;
+router.use('/driver', require('./driver'))
+
+
+module.exports = router
