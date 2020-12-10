@@ -162,14 +162,13 @@ function addNode() {
                 communities.push(topic)
             }
             createSession
-                .run("CREATE (a" + availableId + ":Node {title: \"" + document.getElementById("newTitle").value +
-                    "\", topic:\"" + topic +
-                    "\", topicNumber:" + communities.indexOf(topic) +
-                    ", description:\"" + document.getElementById("newDesc").value +
-                    "\", use: [\" " + document.getElementById("newUse").value.split(",").join("\" , \"") + 
-                    " \"], id:" + availableId + 
-                    ", size:" + parseFloat(document.getElementById("newType").value) + "})")
-                .then(() => {
+                .run('CREATE (a' + availableId + ':Node {title: "' + document.getElementById("newTitle").value +
+                    '", topic:"' + topic +
+                    '", topicNumber:"' + communities.indexOf(topic) +
+                    '", description:"' + document.getElementById("newDesc").value +                    
+                    ' , id:' + availableId +
+                    ', size:' + parseFloat(document.getElementById("newType").value) + '})')
+                .then(() => { 
                 })
                 .catch(error => {
                     console.log(error)
@@ -331,7 +330,7 @@ function saveCoordinates(){
     // в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
 
     // соберем все в один запрос
-    let cypherMatchNodes = ' MATCH '
+    /*let cypherMatchNodes = ' MATCH '
     let cypherMatchRelations = ' MATCH '
     let cypherSET = ' SET '
     Object.keys(pos).forEach(visualId => {        
@@ -347,17 +346,32 @@ function saveCoordinates(){
     cypherMatchRelations = cypherMatchRelations.slice(0, -2);
     cypherSET = cypherSET.slice(0, -2)
     
-    cypher = cypherMatchNodes + cypherMatchRelations + cypherSET 
- 
-    //и отправим на сервер
-    var session = driver.session()    
-    session
-        .run(cypher)
-        .then(result => {})
-        .catch(error => {
-            console.log(error)
+    cypher = cypherMatchNodes + cypherMatchRelations + cypherSET */
+
+    // несколько запросов
+    let cypher = ''
+    Object.keys(pos).forEach(visualId => {        
+        id = parseInt(getVisualNodeProperties(visualId).id)
+        nodeName = 'id' + id
+        relName = 'r' + id 
+        cypher = ' MATCH (' + nodeName +' {id: ' + id + '}) '
+        cypher += ' MATCH ' + deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ' '
+        cypher += ' SET ' + relName + '.x=' + pos[visualId].x + ', ' 
+        cypher += relName + '.y=' + pos[visualId].y + '; ' 
+    
+        var session = driver.session()    
+        session
+            .run(cypher)
+            .then(result => {
+                console.log(cypher)
+	    })
+            .catch(error => {
+                console.log(error)
+            })
+            .then(() => session.close())
         })
-        .then(() => session.close())
+            
+ 
 }
 
 /** 

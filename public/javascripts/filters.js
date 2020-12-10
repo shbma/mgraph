@@ -33,3 +33,13 @@ function addDepthFilter(refresh=true) {
         viz.updateWithCypher(cypher)            
     }
 }
+
+function addNodeTypeFilter(refresh=true){
+    let nodeType = document.getElementById("addNodeTypeFilter").value
+    let cypher = ''
+    if (refresh){
+        viz.updateWithCypher(cypher)
+    } else {
+        viz.renderWithCypher(cypher)
+    }
+}
