@@ -329,25 +329,6 @@ function saveCoordinates(){
     let pos = viz._network.getPositions()  // считаем все координаты всех вершин 
     // в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
 
-    // соберем все в один запрос
-    /*let cypherMatchNodes = ' MATCH '
-    let cypherMatchRelations = ' MATCH '
-    let cypherSET = ' SET '
-    Object.keys(pos).forEach(visualId => {        
-        id = parseInt(getVisualNodeProperties(visualId).id)
-        nodeName = 'id' + id
-        relName = 'r' + id 
-        cypherMatchNodes += '(' + nodeName +' {id: ' + id + '}), '
-        cypherMatchRelations += deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ', '
-        cypherSET += relName + '.x=' + pos[visualId].x + ', ' 
-        cypherSET += relName + '.y=' + pos[visualId].y + ', ' 
-    })
-    cypherMatchNodes = cypherMatchNodes.slice(0, -2); //отрежем ', ' с хвостов
-    cypherMatchRelations = cypherMatchRelations.slice(0, -2);
-    cypherSET = cypherSET.slice(0, -2)
-    
-    cypher = cypherMatchNodes + cypherMatchRelations + cypherSET */
-
     // несколько запросов
     let cypher = ''
     Object.keys(pos).forEach(visualId => {        
