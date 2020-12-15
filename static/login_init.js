@@ -7,6 +7,7 @@ function getGraphInfo() {
     draw() 
     start()
     updateGraph(false, true)
+    setVisEventsHandlers()  // ставим обработчики событий на холсте
 }
 
 /** выдает тексты стартового cypher-запроса */
@@ -40,10 +41,10 @@ function draw() {
         server_user: username,
         server_password: password,
         labels: {  // не влияет на ситуацию - config.labels перезаписывается в других местах 
-            "Node": {
+            "Default": {
                 caption: "title",
                 size: "size",
-                community: "topicNumber"
+                community: "community"
             }
         }, 
         relationships: {

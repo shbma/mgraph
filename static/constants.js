@@ -25,3 +25,10 @@ const deskInterest = {
     DESK: 1,
     RELDESK : 2
 }
+let selectedNode
+let lastLabel
+let properties = []
+let finishedUpdateCount
+let nodeIdAtCanvas
+let isUpdateFinished
+let isFirstClick = true
