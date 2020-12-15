@@ -27,7 +27,6 @@ function updateGraph(reloadNeeded=false, renderNeeded=false) {
         .then(() => {
             if (reloadNeeded)                
                 viz.reload()            
-            setVisEventsHandlers()  // ставим обработчики событий на холсте
             session.close()
         })
 }
@@ -49,7 +48,15 @@ function fillingSelect(select, cypherCode, captionOfResult) {
     let templateSession = driver.session()
     templateSession
         .run(cypherCode)
-        .then(result => {       
+        .then(result => {      
+            if(result.records.length == 0 && select == "deskSelect") {
+                let createDeskSession = driver.session()
+                createDeskSession
+                    .run("create(d:Доска {title: 'Basic'})")
+                    .then(() => createDeskSession.close())
+                deskSelect.add(new Option("Basic"))
+                return
+            } 
             if (result.records == 0) console.log('no results')     
             for(let template of result.records) {                
                 let captionOfTemplate = template.get(captionOfResult)                                
@@ -82,6 +89,7 @@ function clearSelect(selectID) {
 }
 
 function templateChanged(isFirstLevel, templateType) {
+    properties = []
     document.getElementById("div3" + templateType).innerHTML = ""
     let templatesSelector = document.getElementById(templateType)
     if(templatesSelector.options[templatesSelector.selectedIndex].text === "Новый тип" && isFirstLevel) {
@@ -128,10 +136,12 @@ function templateChanged(isFirstLevel, templateType) {
                 for(let property of result.records) {
                     if(property.get("key") !== "title" && property.get("key") !== "size" 
                         && property.get("key") !== "id" && property.get("key") !== "community"
-                        && property.get("key") !== "desk") {
+                        && property.get("key") !== "desk" && property.get("key") !== "x"
+                        && property.get("key") !== "y") {
                         document.getElementById("div2" + templateType).innerHTML +=
                         '<label>' + property.get("key") + ':</label><br>' +
                         '<input type = "text" id = "' + property.get("key") + '"><br>'
+                        properties.push(property.get("key"))
                     }
                 }
             })
@@ -144,6 +154,7 @@ function templateChanged(isFirstLevel, templateType) {
     }
     newPropertysLabelCount = 0
     newPropertysTypeCount = 0
+    isTemplateChangedFinish = true
 }
 
 function addPropertyClick(templateType) {
@@ -267,7 +278,7 @@ function stringify(properties){
 
 /** Как только закончится стабилизация графа - включаем режим ручной расстановки вершин*/
 function setStabilizedHandler(){
-    viz._network.on('stabilized', (param) => {
+    //viz._network.on('stabilized', (param) => {
         // отключим физику и сделаем ребрa бесконечно растяжимыми
         viz._network.physics.physicsEnabled = false
         viz._network.setOptions({
@@ -279,7 +290,7 @@ function setStabilizedHandler(){
         }) 
 
         restoreCoordinates()  // расставим вершины по сохраненным позициям
-    })    
+    //})    
 }
 
 

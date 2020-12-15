@@ -1,4 +1,13 @@
 
+function addOption(optionName) {
+    for (option of Label.options) {
+        if (option.text == optionName) {
+            Label.value = optionName
+            return
+        }
+    }
+    Label.add(new Option(optionName, optionName, false, true))
+}
 /** 
  * Считывает название Типа вершины из поля формы. Если это "Новый тип",
  * то для него создается раздел в config.labels. 
@@ -10,6 +19,7 @@
  *     error: флаг ошибки
  *    }
  */
+
 function handleTemplateName(){
     let result = {name: "", isNew: false, isFirstLevel: false, error: false}
 
@@ -18,11 +28,12 @@ function handleTemplateName(){
         result.isNew = true
         if(document.getElementById("nameOfLabel").value === "") {
             result.error = true
+            result.name = "Default"
+            addOption("Default")
         } else {
             result.isFirstLevel = true
             result.name = replacementSpaces(document.getElementById("nameOfLabel").value)
-            document.getElementById("extendsLabel").add(new Option(result.name))        
-            templatesSelector.add(new Option(result.name))
+            addOption(result.name)
             config.labels[result.name] = {
                 caption: "title",
                 size: "size",
@@ -47,9 +58,10 @@ function addNodeByTamplateClick() {
     }
     let session = driver.session()
     session
-        .run("MATCH (n:" + templateInfo.name + ") RETURN n.community")
+        //.run("MATCH (n:" + templateInfo.name + ") RETURN n.community")
+        .run("match(a) return a")
         .then(result => {
-            let community = result.records[0].get("n.community")
+            //let community = result.records[0].get("n.community")
 
             let cypher ="MATCH (n) WITH max(n.community) AS last_community, max(n.id) AS last_ID " 
             cypher += "MATCH " + deskCondition('', 'd', '', interest=deskInterest.DESK) 
@@ -91,7 +103,7 @@ function addNodeByTamplateClick() {
                     updateGraph()
                     updateMenu()
                 }) 
-
+                alert(cypher)
         })
         .catch(error => {
             console.log(error)
@@ -363,7 +375,7 @@ function saveCoordinates(){
  */
 function restoreCoordinates(){
     var session = driver.session()    
-    let cypher = 'MATCH ' + deskCondition('a', 'd', 'r') + ' RETURN a.id AS nodeID, r.x AS x, r.y AS y'    
+    let cypher = 'MATCH ' + deskCondition('a', 'd', 'r') + ' RETURN id(a) AS nodeID, r.x AS x, r.y AS y'    
     session
         .run(cypher)
         .then(result => {          
@@ -371,9 +383,8 @@ function restoreCoordinates(){
                 let x = record.get('x').low                                    
                 let y = record.get('y').low
                 let realID = record.get('nodeID').low                
-                if (x != 0 || y!= 0) {
-                    let visualID = getVisualNodeIdByRealId(realID)                                
-                    viz._network.moveNode(visualID, x, y) 
+                if (x != 0 || y!= 0) {                               
+                    viz._network.moveNode(realID, x, y) 
                 }
             })            
         })
@@ -409,19 +420,105 @@ function setNodeSelectHandler(){
     })
 }
 
+async function updateGraphAfterClick(param) {
+    finishedUpdateCount++
+    if (finishedUpdateCount == 2) {
+        updateGraph()
+        newPropertysLabelCount = 0
+    }
+}
+
+function createNode(templateInfo, community, param, properties, title) {
+    let createSession = driver.session()
+    createSession
+        .run(`MATCH ${deskCondition('', 'd', '', interest=deskInterest.DESK)}
+                create(a:${templateInfo.name} {
+                    ${properties}
+                    ${title}
+                    size: ${size.value},
+                    community: ${community}
+                })
+                create ${deskCondition('a', 'd', '', interest=deskInterest.RELATION, param.pointer.DOM)}
+                return id(a)`)
+        .then(result => {
+            createSession.close()
+            selectedNode = result.records[0].get("id(a)").low
+            lastLabel = templateInfo.name
+            updateGraphAfterClick(param)
+            if (!title) {
+                caption.value = ""
+            }
+        })
+}
+
+function getCommunity(templateInfo, param, properties, title, callback) {
+    let label = templateInfo.isNew ? "" : `:${templateInfo.name}`
+    let resultCaption = templateInfo.isNew ? "max(a.community)" : "a.community"
+    let community
+    let communitySession = driver.session()
+        communitySession
+            .run(`match(a${label}) return ${resultCaption}`)
+            .then(result => {
+                communitySession.close()
+                community = Number(result.records[0].get(resultCaption))
+                callback(templateInfo, community, param, properties, title)
+            })
+}
+
+/**Данная версия readPropertys ищет свойтсва не в строке а считывает их из массива */
+function readPropertysFromArray(variable="a.", delimiter=" =") {
+    let cypher = ""
+    for (let property of properties) {
+        cypher += `${variable}${property}${delimiter} "${document.getElementById(property).value}", `
+    }
+    for (let i = 0; i < newPropertysLabelCount; i++) {
+        if (document.getElementById(`propertyLabel${i}`).value) {
+            cypher += `${variable}${document.getElementById(`propertyLabel${i}`).value}${delimiter}
+            "${document.getElementById(`propertyLabel${i}Value`).value}", `
+        }
+    }
+    return cypher
+}
+
+function setNode(templateInfo, community, param, properties) {
+    let setSession = driver.session()
+    setSession
+        .run(`match(a) where id(a) = ${selectedNode} remove a:${lastLabel}
+        set
+            a:${templateInfo.name},
+            ${properties}
+            a.title = "${caption.value}",
+            a.size = ${size.value},
+            a.community = ${community}`)
+        .then(() => {
+            setSession.close()
+            getProperties(param)
+        })
+}
+
+
 /**
  * Привязывает обработчик к клику по вершине.
  * Кликнутая вершина ставится выбранной в формах c select-ами по вершинам
  */
-function setNodeClickHandler(){    
-    viz._network.on('click', (param) => {  // по клику на холст
+async function setNodeClickHandler(){
+    viz._network.once('click', (param) => {  // по клику на холст
+        finishedUpdateCount = 0
+        let templateInfo = handleTemplateName()
+        if (isFirstClick) {
+            getProperties(param)
+        }
+        else {
+            getCommunity(templateInfo, param, readPropertysFromArray(), "", setNode)
+        }
         if (param.nodes.length == 0) {
-            return
+            getCommunity(templateInfo, param, "", "", createNode)
         }
         if (viz._network.getSelectedNodes().length == 1){  
+            properties = []
             nodeIdAtCanvas = param.nodes[0]  // ID вершины на холсте, не совпадает с ID в БД        
-            let properties = getVisualNodeProperties(nodeIdAtCanvas)
-            realID = parseInt(properties.id)
+            let nodeProperties = getVisualNodeProperties(nodeIdAtCanvas)
+            realID = parseInt(nodeProperties.id)
             if (realID != NaN) {
                 // ставим выбранной нужную вершину и симулируем клик по select-ам
                 document.getElementById('nodeSelect').value = realID
@@ -429,9 +526,41 @@ function setNodeClickHandler(){
 
                 document.getElementById('relationshipStart').value = realID
                 document.getElementById('relationshipStart').dispatchEvent(new MouseEvent('change'))
-
             }
         }
-        
+        isFirstClick = false
     })
+}
+
+function getProperties(param) {
+    if (param.nodes.length == 1) {
+        setNodeClickHandler()
+        selectedNode = null//Для того, чтобы не перезаписать свойства при следующем щелчке, временный костыль
+        let session = driver.session()
+        session
+            .run(`match(a) where id(a) = ${param.nodes[0]} return *`)
+            .then(result => {
+                session.close()
+                Label.value = result.records[0].get("a").labels[0]
+                finishedUpdateCount = 1
+                updateGraphAfterClick(param, function () {writeProperties(result.records[0].get("a").properties)})
+            })
+    }
+    else {
+        updateGraphAfterClick(param, function () {templateChanged(true, "Label")})
+    }
+}
+
+function writeProperties(properties) {
+    caption.value = properties.title
+    size.value = properties.size
+    div1Label.innerHtml = ""
+    div2Label.innerHtml = ""
+    div3Label.innerHtml = ""
+    for (property in properties) {
+        if (property != "size" && property != "title" && property != "community") {
+            div2Label.innerHtml += `<label>${property}:</label><br>
+                                    <input type = "text" id = "${property}">${properties[property]}<br>`
+        }
+    }
 }
