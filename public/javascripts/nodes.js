@@ -162,13 +162,14 @@ function addNode() {
                 communities.push(topic)
             }
             createSession
-                .run('CREATE (a' + availableId + ':Node {title: "' + document.getElementById("newTitle").value +
-                    '", topic:"' + topic +
-                    '", topicNumber:"' + communities.indexOf(topic) +
-                    '", description:"' + document.getElementById("newDesc").value +                    
-                    ' , id:' + availableId +
-                    ', size:' + parseFloat(document.getElementById("newType").value) + '})')
-                .then(() => { 
+                .run("CREATE (a" + availableId + ":Node {title: \"" + document.getElementById("newTitle").value +
+                    "\", topic:\"" + topic +
+                    "\", topicNumber:" + communities.indexOf(topic) +
+                    ", description:\"" + document.getElementById("newDesc").value +
+                    "\", use: [\" " + document.getElementById("newUse").value.split(",").join("\" , \"") + 
+                    " \"], id:" + availableId + 
+                    ", size:" + parseFloat(document.getElementById("newType").value) + "})")
+                .then(() => {
                 })
                 .catch(error => {
                     console.log(error)
@@ -188,7 +189,7 @@ function changeNode() {
             "MATCH (p {id:" + document.getElementById("nodeSelect").value + "})" +
             " SET p.title = \"" + document.getElementById("title").value + "\"" +
             " SET p.description = \"" + document.getElementById("desc").value + "\"" +
-            " SET p.use = [\"" + document.getElementById("use").value.split(",").join("\" , \"") + "\"]" +
+            //" SET p.use = [\"" + document.getElementById("use").value.split(",").join("\" , \"") + "\"]" +
             " SET p.size = " + parseFloat(document.getElementById("type").value)
         )
         .then(result => {
@@ -222,67 +223,128 @@ function removeNode() {
         })
 }
 
-function getNodes() {
+async function getNodes() {
     //{desk:"' + getDeskName() + '"}
-    var session = driver.session()
-    session
-        .run('MATCH (p) RETURN p.id, p.title ORDER BY p.id')
-        .then(result => {
-            result.records.forEach(record => {
-                let text = "<" + record.get("p.id") + ">:" + record.get("p.title")
-                for (let i = 0; i < selectorsID.length; i++)
-                    document.getElementById(selectorsID[i]).add(new Option(text, record.get("p.id"), false, false))
-            })
-        })
-        .catch(error => {
-            console.log(error) 
-        })
-        .then(() => {
-            var subSession = driver.session()
-            subSession
-                .run('MATCH (p) RETURN DISTINCT p.topic, p.topicNumber')
-                .then(result => {
-                    result.records.forEach(record => {
-                        communities[record._fields[1]] = (record._fields[0])
-                    })
+    let request = {
+        'cypher': 'MATCH (p) RETURN p.id, p.title ORDER BY p.id'
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {
+                result.map(record => {
+                    let text = "<" + record['p.id'] + ">:" + record['p.title']
+                    for (let i = 0; i < selectorsID.length; i++)
+                        document.getElementById(selectorsID[i]).add(new Option(text, record['p.id'], false, false))
                 })
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => {
-            session.close()
-            getSelectedNodeInfo()
-        })
+            })
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
+
+    request['cypher'] = 'MATCH (p) RETURN DISTINCT p.topic, p.topicNumber'
+
+    response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {
+                result.map(record => {
+                    communities[record['p.topicNumber']] = (record['p.topic'])
+                })
+            })
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
+
+    //{desk:"' + getDeskName() + '"}
+    // var session = driver.session()
+    // session
+    //     .run('MATCH (p) RETURN p.id, p.title ORDER BY p.id')
+    //     .then(result => {
+    //         result.records.forEach(record => {
+    //             let text = "<" + record.get("p.id") + ">:" + record.get("p.title")
+    //             for (let i = 0; i < selectorsID.length; i++)
+    //                 document.getElementById(selectorsID[i]).add(new Option(text, record.get("p.id"), false, false))
+    //         })
+    //     })
+    //     .catch(error => {
+    //         console.log(error) 
+    //     })
+    //     .then(() => {
+    //         var subSession = driver.session()
+    //         subSession
+    //             .run('MATCH (p) RETURN DISTINCT p.topic, p.topicNumber')
+    //             .then(result => {
+    //                 result.records.forEach(record => {
+    //                     communities[record._fields[1]] = (record._fields[0])
+    //                 })
+    //             })
+    //     })
+    //     .catch(error => {
+    //         console.log(error)
+    //     })
+    //     .then(() => {
+    //         session.close()
+    //         getSelectedNodeInfo()
+    //     })
 }
 
-function getSelectedNodeInfo() {
-    var session = driver.session()
+async function getSelectedNodeInfo() {
     let id = document.getElementById("nodeSelect").value
     if (id === "") return
-    session
-        .run("MATCH (p {id: " + id + "}) RETURN p.description, p.use, p.title, p.topic, p.size LIMIT 1")
-        .then(result => {
-            result.records.forEach(record => {
-                document.getElementById("desc").value = record.get("p.description")
-                document.getElementById("title").value = record.get("p.title")
-                document.getElementById("topic").value = record.get("p.topic")
-                document.getElementById("use").value = record.get("p.use").join(", ")
 
-                let size = record.get("p.size")
-                let sizeOptions = document.getElementById("type").options
-                for (let i = 0; i < sizeOptions.length; i++) {
-                    if (size == sizeOptions[i].value) {
-                        document.getElementById("type").selectedIndex = i
-                        break
+    let request = {
+        'cypher': 'MATCH (p {id: ' + id + '}) RETURN p.description, p.use, p.title, p.size LIMIT 1'
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {
+                result.map(record => {
+                    document.getElementById("desc").value = record["p.description"]
+                    document.getElementById("title").value = record["p.title"]
+                    if (record["p.use"] != undefined)
+                        document.getElementById("use").value = record["p.use"].join(", ")   
+
+                    let size = record["p.size"]
+                    let sizeOptions = document.getElementById("type").options
+                    for (let i = 0; i < sizeOptions.length; i++) {
+                        if (size == sizeOptions[i].value) {
+                            document.getElementById("type").selectedIndex = i
+                            break
+                        }
                     }
-                }
+                })
             })
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => session.close())
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
 }
 
 /**
@@ -329,30 +391,34 @@ function saveCoordinates(){
     let pos = viz._network.getPositions()  // считаем все координаты всех вершин 
     // в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
 
-    // несколько запросов
-    let cypher = ''
+    // соберем все в один запрос
+    let cypherMatchNodes = ' MATCH '
+    let cypherMatchRelations = ' MATCH '
+    let cypherSET = ' SET '
     Object.keys(pos).forEach(visualId => {        
         id = parseInt(getVisualNodeProperties(visualId).id)
         nodeName = 'id' + id
         relName = 'r' + id 
-        cypher = ' MATCH (' + nodeName +' {id: ' + id + '}) '
-        cypher += ' MATCH ' + deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ' '
-        cypher += ' SET ' + relName + '.x=' + pos[visualId].x + ', ' 
-        cypher += relName + '.y=' + pos[visualId].y + '; ' 
+        cypherMatchNodes += '(' + nodeName +' {id: ' + id + '}), '
+        cypherMatchRelations += deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ', '
+        cypherSET += relName + '.x=' + pos[visualId].x + ', ' 
+        cypherSET += relName + '.y=' + pos[visualId].y + ', ' 
+    })
+    cypherMatchNodes = cypherMatchNodes.slice(0, -2); //отрежем ', ' с хвостов
+    cypherMatchRelations = cypherMatchRelations.slice(0, -2);
+    cypherSET = cypherSET.slice(0, -2)
     
-        var session = driver.session()    
-        session
-            .run(cypher)
-            .then(result => {
-                console.log(cypher)
-	    })
-            .catch(error => {
-                console.log(error)
-            })
-            .then(() => session.close())
-        })
-            
+    cypher = cypherMatchNodes + cypherMatchRelations + cypherSET 
  
+    //и отправим на сервер
+    var session = driver.session()    
+    session
+        .run(cypher)
+        .then(result => {})
+        .catch(error => {
+            console.log(error)
+        })
+        .then(() => session.close())
 }
 
 /** 

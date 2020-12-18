@@ -44,29 +44,17 @@ function updateMenu() {
     getNodes()
 }
 
-function fillingSelect(select, cypherCode, captionOfResult) {    
+function fillingSelect(select, cypherCode, captionOfResult, valueOfResult='', selectedValue=null) {    
     let templateSession = driver.session()
     templateSession
         .run(cypherCode)
         .then(result => {       
             if (result.records == 0) console.log('no results')     
             for(let template of result.records) {                
-                let captionOfTemplate = template.get(captionOfResult)                                
-                document.getElementById(select).add(new Option(captionOfTemplate))
-                if(select === "Label") {
-                    config.labels[captionOfTemplate] = {
-                        caption: "title",
-                        size: "size",
-                        community: "community",
-                        //image: 'https://visjs.org/images/visjs_logo.png'
-                    }                    
-                    /*config.labels["Node"] = {  // если индивидуально под вершину
-                        caption: "title",
-                        size: "size",
-                        community: "topicNumber",
-                        image: 'https://visjs.org/images/visjs_logo.png'
-                    }*/
-                }
+                let captionOfTemplate = template.get(captionOfResult)                          
+                let valueOfTemplate = valueOfResult ? template.get(valueOfResult) : valueOfResult
+                let isSelected = valueOfTemplate == selectedValue
+                document.getElementById(select).add(new Option(captionOfTemplate, valueOfTemplate, false, isSelected))
             }
         })
         .catch(error => {console.log(error)})
@@ -75,7 +63,7 @@ function fillingSelect(select, cypherCode, captionOfResult) {
         })
 }
 
-function clearSelect(selectID) {    
+function clearSelect(selectID) {        
     for (let i = document.getElementById(selectID).options.length - 1; i >= 0; i--)
         document.getElementById(selectID).options[i] = null
 }

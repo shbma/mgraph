@@ -1,7 +1,11 @@
 /** Выдает имя текущей выбранной в интерфейсе доски  */
 function getDeskName(){
-    let deskValue = document.getElementById("deskSelect").value
-    return deskValue ? deskValue : deskDefault    
+    let deskTitle = document.getElementById("deskSelect").getAttribute('actual-title')
+    if (deskTitle != '') {  // этот атрибут заполняется с бэкенда
+        return deskTitle
+    }
+    let deskText = document.getElementById("deskSelect").text
+    return deskText ? deskText : deskDefault    
 }
 
 /** 
@@ -28,6 +32,17 @@ function deskCondition(node='a', desk='', relation='', interest=deskInterest.REL
 }
 
 /** обработчик события смены доски */
-function deskChange(){    
-    updateGraph(true, true)
+function deskChange(){          
+    //updateGraph(true, true)
+    window.location.href = '/desk/' + $('#deskSelect').val()
+}
+
+/** выдает id доски, который нужно показать или выставить активной в select*/
+function getActualDeskId() {
+    return document.getElementById("deskSelect").getAttribute('actual-id')
+}
+
+/** выдает id доски с типологией, которую нужно показать или выставить активной в select*/
+function getActualTypoId() {
+    return document.getElementById("typoSelect").getAttribute('actual-id')
 }

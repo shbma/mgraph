@@ -1,9 +1,18 @@
 var express = require('express');
 var router = express.Router();
 
+let deskController = require('../controllers/deskController');
+
 router.get('/', function(req, res, next) {
   res.redirect('/subject');
 });
+
+/* Получить содержимое доски с указанным id */
+router.get('/desk/:deskID', deskController.desk);
+
+/* Получить содержимое доски c id по-умолчанию */
+router.get('/desk', deskController.desk);
+
 
 /* Предметная доска по-умолчанию */
 router.get('/subject', function(req, res, next) {

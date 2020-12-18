@@ -8,7 +8,7 @@ let username, password
 let updateHandler
 let selectorsID = ["relationshipEnd", "relationshipStart",
     "nodeSelect", "oneWayFilterSelector", "depthFilterSelector"]
-let topicsID = ["newTopic", "topic"]
+let topicsID = [] //["newTopic", "topic"] // аккуратно удалить в будущем (есть  в коде updateMenu)
 let serverUrl = "neo4j://176.57.217.75:7687"
 // будет хранить в реляционной БД
 let communities = []

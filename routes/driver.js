@@ -1,21 +1,18 @@
 const router = require('express').Router()
 
 
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
     try {
         req.neo4j.read(req.body.cypher)
-            .then(data => res.send(data.records))
+            .then(data => {
+                let array = req.neo4j.beautify(data.records)
+                res.send(array)
+            })
             .catch(error => console.log(error))
     } catch (err) {
         console.log(err)
         res.render('error/500')
     }
-})
-
-router.get('/', (req, res) => {
-    req.neo4j.write(req.query.cypher.toString())
-        .then(result => res.send(result))
-        .catch(error => console.log(error))
 })
 
 
