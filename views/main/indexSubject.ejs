@@ -1,0 +1,35 @@
+<%- include('head') %>
+
+<body style="overflow: hidden;">            
+    <div id="menu" class="menu-bar" scroll="yes">
+        <form id="graphMenu" class="graphMenu" name="graphMenu">
+            <%- include('../login')  %>                                  
+            <%- include('../relations/relations') %>            
+            <%- include('../nodes/addNode') %>
+            <%- include('../nodes/editNode') %>                                    
+
+            <%- include('removeInFuture') %>
+
+        </form>
+    </div>
+    <div id="sidebar" class="menu-bar" scroll="yes">
+        <form id="graphMenu" class="graphMenu" name="graphMenu">            
+            <%- include('../filters/depth') %>            
+            <%- include('../filters/section') %>
+            <%- include('../search') %> 
+
+            <fieldset name="search" id="refresh" class="colLeft">
+                <br><button type="button" onclick="updateGraph(true)">Обновить визуализацию</button><br>
+            </fieldset>
+            <fieldset name="saveCoords" id="saveCoords" class="colLeft">
+                <br><button type="button" onclick="saveCoordinates()">Сохранить координаты</button><br>
+            </fieldset>
+
+        </form>
+    </div>
+
+    <div id="viz"></div>
+
+</body>
+
+</html>

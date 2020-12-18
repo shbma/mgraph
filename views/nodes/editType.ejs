@@ -1,0 +1,12 @@
+<fieldset name="vertex" id="vertex">
+    <legend align="left">Изменить/удалить Класс</legend>
+    <label for="nodeSelect">Класс</label><br>
+    <select id="nodeSelect" name="nodeSelect" onchange="getSelectedNodeInfo()">
+    </select><br>
+
+    <label for="title">Название:</label><br>
+    <input type="text" id="title" name="title"><br>
+
+    <br><button type="button" onclick="changeNode()">Изменить выбранную вершину</button><br>
+    <br><button type="button" onclick="removeNode()">Удалить выбранную вершину </button><br>
+</fieldset>

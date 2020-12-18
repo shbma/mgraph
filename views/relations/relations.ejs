@@ -1,0 +1,25 @@
+<fieldset name="verb" id="verb">
+	<legend align="left">Ребра</legend>
+
+	<label for="relationshipStart">Начальная вершина:</label><br>
+	<select id="relationshipStart" name="relationshipStart">
+	</select><br>
+
+	<label for="relationshipType">Тип ребра (если удаляете, то не важно):</label><br>
+	<select id="relationshipType" name="relationshipType">
+	    <option value="ИСПОЛЬЗУЕТ">Использует</option>
+        <option value="СОДЕРЖИТ">Содержит</option>
+        <option value="ФОРМИРУЕТ">Формирует</option>
+        <option value="ДОСТАВЛЯЕТ">Доставляет</option>
+        <option value="ПРОВЕРЯЕТ">Проверяет</option>
+        <option value="СООТВЕТСТВУЕТ">Соответствует</option>
+        <option value="ЯВЛЯЕТСЯ_ПРЕДКОМ">Является предком</option>
+	</select><br>
+
+    <label for="relationshipEnd">Конечная вершина:</label><br>
+    <select id="relationshipEnd" name="relationshipEnd">
+    </select><br><br>
+
+    <br><button type="button" onclick="addRelationship()">Добавить</button><br>
+    <br><button type="button" onclick="removeRelationship()">Удалить</button><br>
+</fieldset>
