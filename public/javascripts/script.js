@@ -276,6 +276,8 @@ function setStabilizedHandler(){
  */
 function setVisEventsHandlers(){
     viz.registerOnEvent("completed", (e)=>{
+        viz._network.stopSimulation() // остановим автоматическое размещение вершин
+
         // разрешим множественное выделение
         viz._network.interactionHandler.selectionHandler.options.multiselect = true
 
