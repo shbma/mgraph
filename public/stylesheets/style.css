@@ -90,6 +90,9 @@
     position: relative;
     top: 1px;
 }
+.graphMenu>*>button[disabled] {
+    background: gray;
+}
 
 .vis-tooltip{
     max-width: 30vw;
