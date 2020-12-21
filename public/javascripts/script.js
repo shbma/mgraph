@@ -68,6 +68,7 @@ function clearSelect(selectID) {
         document.getElementById(selectID).options[i] = null
 }
 
+// использовалась при добавлении узла --> TODO проверить, что нигде еще не нужна и удалить
 function templateChanged(isFirstLevel, templateType) {
     document.getElementById("div3" + templateType).innerHTML = ""
     let templatesSelector = document.getElementById(templateType)
@@ -133,6 +134,7 @@ function templateChanged(isFirstLevel, templateType) {
     newPropertysTypeCount = 0
 }
 
+// использовалось при добавлени свойств узла --> TODO проверить есть ли где-то еще и удалить
 function addPropertyClick(templateType) {
     let numberOfNewProperty = 0
     let propertys = []

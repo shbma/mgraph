@@ -15,19 +15,28 @@ function getDeskName(){
  * @param{string} relation - обозначение отношения привязки к доске
  * @param{string} interest - на что ориентирован выдаваемый кусок запроса
  * @param{object} relProperties - дополнительные свойства ребра (если ориентируемся на ребро)
+ * @param{string} deskType - тип доски ('Предметная', 'Типология' и пр)
  */
-function deskCondition(node='a', desk='', relation='', interest=deskInterest.RELDESK, relProperties={}){
-    let deskName = getDeskName()
+function deskCondition(node='a', desk='', relation='', interest=deskInterest.RELDESK, relProperties={}, deskType=''){    
+    let deskID = 0;
+    switch (deskType) {        
+        case 'Типология':
+            deskID = getActualTypoId()
+            break
+        case 'Предметная': 
+        default:
+            deskID = getActualDeskId()
+    }
     let props = stringify(relProperties)
     props = props ? ', ' + props : '' 
         
     switch (interest){
         case deskInterest.RELDESK:
-            return ' ('+node+')<-['+relation+':subsection {type:"СОДЕРЖИТ"}]-('+desk+':Доска {title:"'+deskName+'"}) '    
+            return ' ('+node+')<-['+relation+':subsection {type:"СОДЕРЖИТ"}]-('+desk+':Доска {id:'+deskID+'}) '    
         case deskInterest.RELATION:
             return ' ('+node+')<-['+relation+':subsection {type:"СОДЕРЖИТ" '+props+'}]-('+desk+') '        
         case deskInterest.DESK:
-            return '('+desk+':Доска {title:"'+deskName+'"})' 
+            return '('+desk+':Доска {id:"'+deskID+'"})' 
     }
 }
 

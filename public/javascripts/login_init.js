@@ -28,12 +28,14 @@ function start() {
         fillingSelect("Label", 'MATCH (n) RETURN distinct labels(n)', 'labels(n)')  // select типов вершин    
         templateChanged(true, 'Label')
     }
-    let typeEl = document.getElementById("Type")
-    if (typeEl) {
-        typeEl.add(new Option("Новый тип"))
-        templateChanged(true, 'Type')    
+    let typeEl = document.getElementById("theTypeSelect")
+    if (typeEl) {    
+        let cond = deskCondition('n', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
+        console.log('MATCH ' + cond + ' RETURN DISTINCT n.title')      
+        fillingSelect("theTypeSelect", 'MATCH ' + cond + ' RETURN DISTINCT n.title', 'n.title')  // select типов вершин    
+        //templateChanged(true, 'Type')    
     }      
-    let selectDeskId = getActualDeskId()
+    let selectDeskId = getActualDeskId() 
     fillingSelect("deskSelect", 'MATCH (n:Доска) RETURN n.title AS desks, n.id AS ids', "desks", "ids", selectDeskId)    
     
     let typologySelect = document.getElementById("typoSelect")
