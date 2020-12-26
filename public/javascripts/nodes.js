@@ -1,4 +1,4 @@
-/** выдает имя выбранного типа вершины*/
+/** Выдает имя выбранного типа вершины */
 function getTemplateInfo(){
     let templatesSelector = document.getElementById("theTypeSelect")
     let text = templatesSelector.options[templatesSelector.selectedIndex].text
@@ -33,7 +33,7 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
     cypher += ' id: last_ID+1, '
     cypher += ' community: ' + community  + ', ' 
     cypher += ' description: "' + document.getElementById("description").value  + '", ' 
-    cypher += ' sources: "' + document.getElementById("sources").value  + '", ' 
+    cypher += ' sources: "' + document.getElementById("sourcesIndAdd").value  + '", ' 
     let sizeVal = document.getElementById("size")
                           .options[document.getElementById("size").selectedIndex]
                           .value
@@ -58,7 +58,7 @@ function addVertex(typeOfNode='instance') {
     let community = 0
     
     if (typeOfNode == 'type'){
-        community = document.getElementById("community").value
+        community = document.getElementById("communityInAdd").value
         if (isNaN(parseInt(community)) || parseInt(community) < 0) {
             return 'error: bad community'
         }
@@ -128,60 +128,137 @@ function searchNodeByName(inputNode, UL, clickOnULFunction) {
     }
 }
 
-function addNode() {
-    let availableId = 0
-    var idSession = driver.session()
-    idSession
-        .run("MATCH (p) RETURN p.id ORDER BY p.id DESC LIMIT 1")
-        .then(result => {
-            result.records.forEach(record => {
-                availableId = 1 + parseInt(record.get("p.id"))
-            })
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => {
-            idSession.close()
-        })
-        .then(() => {
-            var createSession = driver.session()
-            let topic = document.getElementById("newTopic").value
-            if (topic === "Создать новую тему") {
-                topic = document.getElementById("newTitle").value
-                communities.push(topic)
-            }
-            createSession
-                .run("CREATE (a" + availableId + ":Node {title: \"" + document.getElementById("newTitle").value +
-                    "\", topic:\"" + topic +
-                    "\", topicNumber:" + communities.indexOf(topic) +
-                    ", description:\"" + document.getElementById("newDesc").value +
-                    "\", use: [\" " + document.getElementById("newUse").value.split(",").join("\" , \"") + 
-                    " \"], id:" + availableId + 
-                    ", size:" + parseFloat(document.getElementById("newType").value) + "})")
-                .then(() => {
-                })
-                .catch(error => {
-                    console.log(error)
-                })
-                .then(() => {
-                    createSession.close()
-                    updateGraph()
-                    updateMenu()
-                })
-        })
+/** выдает объект с параметрами вершины*/
+async function getNodeParameters(nodeID){
+    let request = { 
+            'cypher': ` MATCH (n {id:` + nodeID + `}) 
+                        RETURN n.title AS title, n.community AS community`
+        }    
+    let response = await fetch('/driver', {        
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })        
+    if (!response.ok) {
+        console.log('Ошибка HTTP in changeNode: ' + response.status)
+        return
+    }
+    let result = await response.json()                        
+    return result[0]
 }
 
-function changeNode() {
+async function changeNode() {
+    let communityNew = null
+    let cypherTypeAddon = ''    
+    let nodeID = document.getElementById("nodeSelect").value
+    let typeSelector = document.getElementById("theTypeSelectInEdit")
+    if (typeSelector) {
+        typeID = typeSelector.value
+        // узнаем параметры новой метки
+        let typeInfo = await getNodeParameters(typeID)                      
+        let labelNew = typeInfo['title']
+        communityNew = typeInfo['community']
+        // узнаем текущую метку вершины
+        typeInfo = await getNodeTypeInfo(nodeID)
+        let labelOld = typeInfo.title
+        
+        cypherTypeAddon = ' REMOVE p:' + labelOld + ' SET p:' + labelNew + ' '
+        }    
+        
+    // сформируем запрос в БД на изменения
+    let cypher = "MATCH (p {id:" + nodeID + "})" +
+        cypherTypeAddon + 
+        " SET p.title = \"" + document.getElementById("title").value + "\"" +
+        " SET p.description = \"" + document.getElementById("desc").value + "\"" +            
+        " SET p.size = " + parseFloat(document.getElementById("type").value)
+    if (document.getElementById("sourcesInEdit")){
+        cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
+    }
+    if (document.getElementById("communityInEdit")){
+        communityNew = document.getElementById("communityInEdit").value
+    }
+    if (communityNew != null){
+        cypher += ' SET p.community = ' + communityNew
+    }
+    cypher += ' RETURN p;'
+    console.log(cypher)
+
+    // выполним запрос
+    let request = { 'cypher': cypher }
+    let response = await fetch('/driver', {        
+        method: 'PATCH',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+    if (!response.ok) {
+        console.log('Ошибка HTTP in changeNode: ' + response.status)
+        return
+    }
+    updateGraph()
+    updateMenu()
+    
+
+    /*
+    
+    //cypher += " REMOVE p:... SET p:... \""  + "\""
+    //cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
+    //typeInfo.typeID
+
+
+    cypher = "MATCH (p {id:" + nodeID + "})" +
+            " SET p.title = \"" + document.getElementById("title").value + "\"" +
+            " SET p.description = \"" + document.getElementById("desc").value + "\"" +            
+            " SET p.size = " + parseFloat(document.getElementById("type").value)
+    if (document.getElementById("sourcesInEdit")){
+        cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
+    }
+    if (document.getElementById("communityInEdit")){
+        cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
+    }
+
+    let request = { 'cypher': cypher }    
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        let result = await response.json()                        
+        return result[0]
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+        return {}
+    }
+
+
+
+    let nodeID = document.getElementById("nodeSelect").value
+    let cypher = "MATCH (p {id:" + nodeID + "})" +
+            " SET p.title = \"" + document.getElementById("title").value + "\"" +
+            " SET p.description = \"" + document.getElementById("desc").value + "\"" +            
+            " SET p.size = " + parseFloat(document.getElementById("type").value)
+    if (document.getElementById("sourcesInEdit")){
+        cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
+    }
+    if (document.getElementById("communityInEdit")){
+        cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
+    }
+    //let typeInfo = await getNodeTypeInfo(nodeID)
+    //cypher += " REMOVE p:... SET p:... \""  + "\""
+    //cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
+    //typeInfo.typeID
+
     var setSession = driver.session()
     setSession
-        .run(
-            "MATCH (p {id:" + document.getElementById("nodeSelect").value + "})" +
-            " SET p.title = \"" + document.getElementById("title").value + "\"" +
-            " SET p.description = \"" + document.getElementById("desc").value + "\"" +
-            //" SET p.use = [\"" + document.getElementById("use").value.split(",").join("\" , \"") + "\"]" +
-            " SET p.size = " + parseFloat(document.getElementById("type").value)
-        )
+        .run(cypher)
         .then(result => {
         })
         .catch(error => {
@@ -191,7 +268,7 @@ function changeNode() {
             setSession.close()
             updateGraph()
             updateMenu()
-        })
+        })*/
 } 
 
 function removeNode() {
@@ -214,7 +291,6 @@ function removeNode() {
 }
 
 async function getNodes() {
-    //{desk:"' + getDeskName() + '"}
     let request = {
         'cypher': 'MATCH (p) RETURN p.id, p.title ORDER BY p.id'
     }
@@ -241,9 +317,29 @@ async function getNodes() {
         console.log('Ошибка HTTP: ' + response.status)
     }
 
-    request['cypher'] = 'MATCH (p) RETURN DISTINCT p.topic, p.topicNumber'
+}
 
-    response = await fetch('/driver', {
+/**
+ * Выдает данные по типу заданного экземпляра вершины
+ * @param{number} instanceID - id вершины, для которой добываем свойства типа
+ * @return{objectr} значения свойств типа нужной вершины, 
+ *                  например {'typeID':127, 'community':5, 'title': "Знание"}
+ */
+async function getNodeTypeInfo(instanceID){
+    let cond_typo = deskCondition('t', 'dt', '', deskInterest.RELDESK, {}, deskType='Типология')  
+    
+    let request = {
+        'cypher': ` MATCH (s {id:` + instanceID + `}) 
+                    CALL {
+                        WITH s
+                        MATCH ` + cond_typo + ` 
+                        WHERE t.title=labels(s)[0]
+                        RETURN t.id as typeID, t.community AS community, t.title AS title
+                    } 
+                    RETURN typeID, community, title`
+    }    
+
+    let response = await fetch('/driver', {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json;charset=utf-8'
@@ -252,56 +348,43 @@ async function getNodes() {
     })
 
     if (response.ok) {
-        response
-            .json()
-            .then(result => {
-                result.map(record => {
-                    communities[record['p.topicNumber']] = (record['p.topic'])
-                })
-            })
+        let result = await response.json()                        
+        return result[0]
     } else {
         console.log('Ошибка HTTP: ' + response.status)
+        return {}
     }
-
-    //{desk:"' + getDeskName() + '"}
-    // var session = driver.session()
-    // session
-    //     .run('MATCH (p) RETURN p.id, p.title ORDER BY p.id')
-    //     .then(result => {
-    //         result.records.forEach(record => {
-    //             let text = "<" + record.get("p.id") + ">:" + record.get("p.title")
-    //             for (let i = 0; i < selectorsID.length; i++)
-    //                 document.getElementById(selectorsID[i]).add(new Option(text, record.get("p.id"), false, false))
-    //         })
-    //     })
-    //     .catch(error => {
-    //         console.log(error) 
-    //     })
-    //     .then(() => {
-    //         var subSession = driver.session()
-    //         subSession
-    //             .run('MATCH (p) RETURN DISTINCT p.topic, p.topicNumber')
-    //             .then(result => {
-    //                 result.records.forEach(record => {
-    //                     communities[record._fields[1]] = (record._fields[0])
-    //                 })
-    //             })
-    //     })
-    //     .catch(error => {
-    //         console.log(error)
-    //     })
-    //     .then(() => {
-    //         session.close()
-    //         getSelectedNodeInfo()
-    //     })
 }
 
+/** 
+ * Зполняет списки с типами вершин. Может поставить выбранной по конретному id.
+ * @param{string} id элемента со списком выбра на html-странице
+ * @param{string} whichID - id элемента, чей тип надо поставить выбранным
+ */
+async function fillTypeSelector(selector, whichID=''){
+    let selEl = document.getElementById(selector)    
+    if (selEl){
+        let selectedTypeId = null
+        if (whichID){              
+            let info = await getNodeTypeInfo(whichID)
+            selectedTypeId = info.typeID            
+        } 
+        let cond = deskCondition('n', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
+        fillingSelect(selector, 
+                    'MATCH ' + cond + ' RETURN DISTINCT n.title, n.id', 
+                    'n.title', 'n.id', selectedTypeId)
+    }
+}
+
+/**
+ * Запрашивает информацию с выбранного узла и заполняет по ней форму редактирования
+ */
 async function getSelectedNodeInfo() {
     let id = document.getElementById("nodeSelect").value
     if (id === "") return
 
     let request = {
-        'cypher': 'MATCH (p {id: ' + id + '}) RETURN p.description, p.use, p.title, p.size LIMIT 1'
+        'cypher': 'MATCH (p {id: ' + id + '}) RETURN p.description, p.sources, p.title, p.size, p.community, p.id LIMIT 1'
     }
 
     let response = await fetch('/driver', {
@@ -317,12 +400,21 @@ async function getSelectedNodeInfo() {
             .json()
             .then(result => {
                 result.map(record => {
-                    document.getElementById("desc").value = record["p.description"]
-                    document.getElementById("title").value = record["p.title"]
-                    if (record["p.use"] != undefined)
-                        document.getElementById("use").value = record["p.use"].join(", ")   
+                    document.getElementById("desc").value = 
+                        record["p.description"] != undefined ? record["p.description"] : ''
+                    document.getElementById("title").value = 
+                        record["p.title"] != undefined ? record["p.title"] : ''
+                    document.getElementById("sourcesInEdit").value = 
+                        record["p.sources"] != undefined ? record["p.sources"] : ''
+                    if (document.getElementById("communityInEdit")) {
+                        document.getElementById("communityInEdit").value = 
+                            record["p.community"] != undefined ? record["p.community"] : ''
+                    }
+
+                    fillTypeSelector("theTypeSelectInEdit", record["p.id"])
 
                     let size = record["p.size"]
+                    // типоразмер
                     let sizeOptions = document.getElementById("type").options
                     for (let i = 0; i < sizeOptions.length; i++) {
                         if (size == sizeOptions[i].value) {
@@ -330,6 +422,7 @@ async function getSelectedNodeInfo() {
                             break
                         }
                     }
+
                 })
             })
     } else {

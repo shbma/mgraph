@@ -44,23 +44,37 @@ function updateMenu() {
     getNodes()
 }
 
-function fillingSelect(select, cypherCode, captionOfResult, valueOfResult='', selectedValue=null) {    
-    let templateSession = driver.session()
-    templateSession
-        .run(cypherCode)
-        .then(result => {       
-            if (result.records == 0) console.log('no results')     
-            for(let template of result.records) {                
-                let captionOfTemplate = template.get(captionOfResult)                          
-                let valueOfTemplate = valueOfResult ? template.get(valueOfResult) : valueOfResult
-                let isSelected = valueOfTemplate == selectedValue
-                document.getElementById(select).add(new Option(captionOfTemplate, valueOfTemplate, false, isSelected))
-            }
-        })
-        .catch(error => {console.log(error)})
-        .then(() => {
-            templateSession.close()
-        })
+async function fillingSelect(select, cypherCode, captionOfResult, valueOfResult='', selectedValue=null) {        
+    let request = {
+        'cypher': cypherCode
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {                
+                if (result.length == 0) console.log('no results')     
+                // очистим список и заполним заново                      
+                document.querySelectorAll('#'+select+' option').forEach(option => option.remove()) 
+                for(let template of result) {                
+                    let captionOfTemplate = template[captionOfResult]                          
+                    let valueOfTemplate = valueOfResult ? template[valueOfResult] : valueOfResult
+                    let isSelected = valueOfTemplate == selectedValue
+                    document.getElementById(select).add(new Option(captionOfTemplate, valueOfTemplate, false, isSelected))
+                }    
+            })
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
+
 }
 
 function clearSelect(selectID) {        
