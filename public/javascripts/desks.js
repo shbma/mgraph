@@ -36,7 +36,7 @@ function deskCondition(node='a', desk='', relation='', interest=deskInterest.REL
         case deskInterest.RELATION:
             return ' ('+node+')<-['+relation+':subsection {type:"СОДЕРЖИТ" '+props+'}]-('+desk+') '        
         case deskInterest.DESK:
-            return '('+desk+':Доска {id:"'+deskID+'"})' 
+            return '('+desk+':Доска {id:'+deskID+'})' 
     }
 }
 
@@ -48,10 +48,10 @@ function deskChange(){
 
 /** выдает id доски, который нужно показать или выставить активной в select*/
 function getActualDeskId() {
-    return document.getElementById("deskSelect").getAttribute('actual-id')
+    return parseInt(document.getElementById("deskSelect").getAttribute('actual-id'))
 }
 
 /** выдает id доски с типологией, которую нужно показать или выставить активной в select*/
 function getActualTypoId() {
-    return document.getElementById("typoSelect").getAttribute('actual-id')
+    return parseInt(document.getElementById("typoSelect").getAttribute('actual-id'))
 }

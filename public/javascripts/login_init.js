@@ -1,5 +1,5 @@
 
-function getGraphInfo() {
+function getGraphInfo() {    
     desk = getDeskName()
     getLoginInfo()
     neo4jLogin()
@@ -31,8 +31,7 @@ function start() {
     let typeEl = document.getElementById("theTypeSelect")
     if (typeEl) {    
         let cond = deskCondition('n', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
-        console.log('MATCH ' + cond + ' RETURN DISTINCT n.title')      
-        fillingSelect("theTypeSelect", 'MATCH ' + cond + ' RETURN DISTINCT n.title', 'n.title')  // select типов вершин    
+        fillingSelect("theTypeSelect", 'MATCH ' + cond + ' RETURN DISTINCT n.title, n.id', 'n.title', 'n.id')  // select типов вершин    
         //templateChanged(true, 'Type')    
     }      
     let selectDeskId = getActualDeskId() 
@@ -90,7 +89,7 @@ function updateConfigLabels() {
                     config.labels[captionOfLabel] = {
                         caption: "title",
                         size: "size",
-                        community: "community",
+                        community: "community"                        
                         //image: 'https://visjs.org/images/visjs_logo.png'
                     }                    
                     /*config.labels["Node"] = {  // если индивидуально под вершину

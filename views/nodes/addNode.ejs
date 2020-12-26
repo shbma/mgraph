@@ -1,7 +1,10 @@
 <fieldset name="addNodeByTemplate" id="addNodeByTemplate">
     <legend align="left">Добавить вершину</legend>
     <label>Название:</label><br>
-    <input type="text" id="caption"><br>
+    <input type="text" id="caption"><br><label>Описание:</label><br>
+    <input type="text" id="description" value=""><br>
+    <label>Источники:</label><br>
+    <input type="text" id="sources" value=""><br>
     <label>Размер:</label>
     <select id="size" name="size">
         <option value="20">Обычный</option>
@@ -11,5 +14,5 @@
     <select id="theTypeSelect" name="theTypeSelect"> 
     </select><br>
     
-    <br><button type="button" onclick="addNodeByTamplateClick()">Добавить вершину</button><br>
+    <br><button type="button" onclick="addVertex('instance')">Добавить вершину</button><br>
 </fieldset>

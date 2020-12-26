@@ -1,107 +1,97 @@
-
-/** 
- * Считывает название Типа вершины из поля формы. Если это "Новый тип",
- * то для него создается раздел в config.labels. 
- * @return {object} контейнер с названием и сведениями о состоянии
- *   {
-       name: название типа, 
- *     isNew: флаг - новый ли,
- *     isFirstLevel: флаг - верхний ли уровень наследования,
- *     error: флаг ошибки
- *    }
- */
-function handleTemplateName(){
-    let result = {name: "", isNew: false, isFirstLevel: false, error: false}
-
-    let templatesSelector = document.getElementById("Label")
-    if(templatesSelector.options[templatesSelector.selectedIndex].text === "Новый тип") {
-        result.isNew = true
-        if(document.getElementById("nameOfLabel").value === "") {
-            result.error = true
-        } else {
-            result.isFirstLevel = true
-            result.name = replacementSpaces(document.getElementById("nameOfLabel").value)
-            document.getElementById("extendsLabel").add(new Option(result.name))        
-            templatesSelector.add(new Option(result.name))
-            config.labels[result.name] = {
-                caption: "title",
-                size: "size",
-                community: "community"
-            }
-        } 
-    }
-    else {
-        result.name = templatesSelector.options[templatesSelector.selectedIndex].text
-    }
-    return result
+/** выдает имя выбранного типа вершины*/
+function getTemplateInfo(){
+    let templatesSelector = document.getElementById("theTypeSelect")
+    let text = templatesSelector.options[templatesSelector.selectedIndex].text
+    let value = templatesSelector.options[templatesSelector.selectedIndex].value
+    return {'title': text, 'id': value}
 }
 
-/** Добавляет вершину выбранного типа в граф */
-function addNodeByTamplateClick() {
-    if(document.getElementById("caption").value === "") {
-        return
+/**
+ * Выдает cypher-запрос на добавление новой вершины (типа или его экземпляра)
+ * @param{string} typeOfNode - тип вершины: это класс('type') или экземпляр('instance')
+ * @param{string} caption - имя создаваемой вершины
+ * @param{number} community - код группы вершин (для класса задать, для экземпляра достанет сам)
+ * @param{string} templateName - метка (имя типа), которая присваивается вершине
+ */
+function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templateName){
+    let cypher ="MATCH (n) WITH max(n.id) AS last_ID " 
+    if (typeOfNode == 'instance'){  // достанем с типологии код сообщества
+        let cond = deskCondition('a', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
+        cypher += `
+            CALL {
+                MATCH ` + cond + `WHERE a.id=` + getTemplateInfo().id + 
+                ` RETURN a.community AS tCommunity
+               } ` 
+        community = 'tCommunity'
+    }                
+    cypher += "MATCH " + deskCondition('', 'd', '', interest=deskInterest.DESK) 
+    cypher +=" CREATE (a:" + templateName
+              
+    cypher += "{"             
+
+    cypher += ' title: "' + caption + '", '
+    cypher += ' id: last_ID+1, '
+    cypher += ' community: ' + community  + ', ' 
+    cypher += ' description: "' + document.getElementById("description").value  + '", ' 
+    cypher += ' sources: "' + document.getElementById("sources").value  + '", ' 
+    let sizeVal = document.getElementById("size")
+                          .options[document.getElementById("size").selectedIndex]
+                          .value
+    cypher += ' size:' + sizeVal + '}) '
+    let coords = {x:0, y:0}
+    cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
+    //console.log(cypher)
+    return cypher
+}
+
+/** 
+ * Добавляет вершину выбранного типа в граф 
+ * @param{string} тип вершины - это класс('type') или экземпляр('instance')
+ */
+function addVertex(typeOfNode='instance') {
+    let caption = document.getElementById("caption").value
+    if(caption === "") {
+        return 'error: empty caption'
     }
-    templateInfo = handleTemplateName()    
-    if (templateInfo.error) {
-        return
+    
+    let templateName = ''
+    let community = 0
+    
+    if (typeOfNode == 'type'){
+        community = document.getElementById("community").value
+        if (isNaN(parseInt(community)) || parseInt(community) < 0) {
+            return 'error: bad community'
+        }
+        templateName = 'Тип'
+    } else if (typeOfNode == 'instance'){
+        templateName = getTemplateInfo().title
+    }   
+    
+    config.labels[caption] = {
+        caption: "title",
+        size: "size",
+        community: "community"
     }
-    console.log("MATCH (n:" + templateInfo.name + ") RETURN n.community")
-    let session = driver.session()
+
+    let cypher = makeCypher4VertexAdd(typeOfNode, caption, community, templateName)
+
+    // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
+    var session = driver.session()
     session
-        .run("MATCH (n:" + templateInfo.name + ") RETURN n.community")
-        .then(result => {
-            let community = result.records[0].get("n.community")
-
-            let cypher ="MATCH (n) WITH max(n.community) AS last_community, max(n.id) AS last_ID " 
-            cypher += "MATCH " + deskCondition('', 'd', '', interest=deskInterest.DESK) 
-            cypher +=" CREATE (a:" + templateInfo.name
-            
-            // собираем в запрос свойства
-            let propertys = readPropertys("Label")
-            let isFirstProperty = propertys === "" ? true : false
-            cypher += "{" + propertys
-            if (!isFirstProperty) {
-                cypher += ","
-            }
-            
-            let community_id = templateInfo.isNew ? " last_community+1 " : community
-
-            cypher += ' title: "' + document.getElementById("caption").value + '", '
-            cypher += ' id: last_ID+1, '
-            cypher += ' community: ' + community_id  + ', '            
-            cypher += ' x: 0, y: 0, '
-            let sizeVal = document.getElementById("size")
-                                  .options[document.getElementById("size").selectedIndex]
-                                  .value
-            cypher += ' size:' + sizeVal + '}) '
-            let coords = {x:0, y:0}
-            cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
-            console.log(cypher)
-
-            // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
-            var subSession = driver.session()
-            subSession
-                .run(cypher)
-                .then(() => {})
-                .catch(error => {
-                    console.log(error)
-                    alert("Не получилось добавить вершину. Возможно вы где-то ввели недопустимый символ.")
-                    alert(cypher)
-                })
-                .then(() => {
-                    session.close()
-                    updateGraph()
-                    updateMenu()
-                }) 
-
-        })
+        .run(cypher)
+        .then(() => {})
         .catch(error => {
-            console.log(error)            
-            alert("Ошибка запроса к БД. Не удалось прочитать тип вершины.")            
+            console.log(error)
+            alert("Не получилось добавить вершину. Возможно вы где-то ввели недопустимый символ.")
+            alert(cypher)
         })
+        .then(() => {
+            session.close()
+            updateGraph()
+            updateMenu()
+        }) 
 
     newPropertysLabelCount = 0
-    templateChanged(templateInfo.isFirstLevel, "Label")
     document.getElementById("caption").value = ""
 }
 
