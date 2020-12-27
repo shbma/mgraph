@@ -1,6 +1,6 @@
 /** Выдает имя выбранного типа вершины */
 function getTemplateInfo(){
-    let templatesSelector = document.getElementById("theTypeSelect")
+    let templatesSelector = document.getElementById("theTypeSelectInAdd")
     let text = templatesSelector.options[templatesSelector.selectedIndex].text
     let value = templatesSelector.options[templatesSelector.selectedIndex].value
     return {'title': text, 'id': value}
@@ -33,7 +33,7 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
     cypher += ' id: last_ID+1, '
     cypher += ' community: ' + community  + ', ' 
     cypher += ' description: "' + document.getElementById("description").value  + '", ' 
-    cypher += ' sources: "' + document.getElementById("sourcesIndAdd").value  + '", ' 
+    cypher += ' sources: "' + document.getElementById("sourcesInAdd").value  + '", ' 
     let sizeVal = document.getElementById("size")
                           .options[document.getElementById("size").selectedIndex]
                           .value
