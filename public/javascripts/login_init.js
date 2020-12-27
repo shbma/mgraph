@@ -21,7 +21,7 @@ function initialCypher(){
         }
 }
 
-function start() {
+async function start() {
     let labelEl = document.getElementById("Label")       
     if (labelEl) {
         labelEl.add(new Option("Новый тип"))
@@ -31,12 +31,12 @@ function start() {
     fillTypeSelector("theTypeSelectInAdd")
     
     let selectDeskId = getActualDeskId() 
-    fillingSelect("deskSelect", 'MATCH (n:Доска) RETURN n.title AS desks, n.id AS ids', "desks", "ids", selectDeskId)    
+    await fillingSelect("deskSelect", 'MATCH (n:Доска) RETURN n.title AS desks, n.id AS ids', "desks", "ids", selectDeskId)    
     
     let typologySelect = document.getElementById("typoSelect")
     if (typologySelect){
         let selectTyDeskId = getActualTypoId()
-        fillingSelect("typoSelect", 'MATCH (n:Доска {type:"Типология"}) RETURN n.title AS desks, n.id AS ids', "desks", "ids", selectTyDeskId)    
+        await fillingSelect("typoSelect", 'MATCH (n:Доска {type:"Типология"}) RETURN n.title AS desks, n.id AS ids', "desks", "ids", selectTyDeskId)    
     }
     updateConfigLabels()  
     updateConfigRelationships()
