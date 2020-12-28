@@ -216,31 +216,6 @@ function readPropertys(templateType) {
     return cypher
 }
 
-function clickOnULSearch(event, node, UL) {
-    let selectedNodeId = event.target.closest("li").value
-    let nodeSelector = document.getElementById("nodeSelect")
-    for (let i = 0; i < nodeSelector.options.length; i++){
-        if (nodeSelector.options[i].value == selectedNodeId) {
-            document.getElementById(node).value = nodeSelector.options[i].text
-            clearUL(UL)
-            if(node === "firstNode") {
-                firstNodeID = selectedNodeId
-            }
-            else {
-                secondNodeID = selectedNodeId
-            }
-            return
-        }
-    }
-}
-
-function clearUL(UL) {
-    let list = document.getElementById(UL)
-    while (list.hasChildNodes()) {
-        list.removeChild(list.firstChild);
-    }
-}
-
 function replacementSpaces(caption) {
     let indexOfSpace
     while ((indexOfSpace = caption.indexOf(" ")) != -1) {

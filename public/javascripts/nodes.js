@@ -95,39 +95,6 @@ function addVertex(typeOfNode='instance') {
     document.getElementById("caption").value = ""
 }
 
-function clickOnUL(event) {
-    let selectedNodeId = event.target.closest("li").value
-    let nodeSelector = document.getElementById("nodeSelect")
-    for (let i = 0; i < nodeSelector.options.length; i++){
-        if (nodeSelector.options[i].value == selectedNodeId) {
-            nodeSelector.selectedIndex = i
-            getSelectedNodeInfo()
-            return
-        }
-    }
-}
-
-function searchNodeByName(inputNode, UL, clickOnULFunction) {
-    let input = document.getElementById(inputNode).value.toLowerCase().trim()
-    let list = document.getElementById(UL)
-    clearUL(UL)
-    if (input === ""){return}
-    let nodeSelector = document.getElementById("nodeSelect")
-    for (let i = 0; i < nodeSelector.options.length; i++){
-        if (nodeSelector.options[i].text.toLowerCase().indexOf(input) >= 0) {
-            console.log(input + " : " + nodeSelector.options[i].text.toLowerCase())
-            let li = document.createElement("li")
-            li.value = nodeSelector.options[i].value
-            li.onclick = (event) => clickOnULFunction(event, inputNode, UL)
-            let a = document.createElement("a")
-            a.text = nodeSelector.options[i].text
-
-            li.appendChild(a)
-            list.appendChild(li)
-        }
-    }
-}
-
 /** выдает объект с параметрами вершины*/
 async function getNodeParameters(nodeID){
     let request = { 
@@ -290,6 +257,10 @@ function removeNode() {
         })
 }
 
+/**
+ * Выбирает все вершины с данной доски и заполняет ими списки выбора,
+ * id которых лежат в массиве selectorsID
+ */
 async function getNodes() {
     let request = {
         'cypher': `MATCH (p) WHERE ` + deskCondition('p') + `
@@ -530,6 +501,11 @@ function restoreCoordinates(){
         .then(() => session.close())    
 }
 
+/** ставит камеру на узел, чей ID из базы данных передан в фунцию*/
+function focusOnNode(realID){
+    let visualID = getVisualNodeIdByRealId(realID)    
+    viz._network.focus(visualID)
+}
 
 /*=================== Обработка событий ================*/
 
