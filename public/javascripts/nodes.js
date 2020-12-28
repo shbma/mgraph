@@ -292,7 +292,8 @@ function removeNode() {
 
 async function getNodes() {
     let request = {
-        'cypher': 'MATCH (p) RETURN p.id, p.title ORDER BY p.id'
+        'cypher': `MATCH (p) WHERE ` + deskCondition('p') + `
+                   RETURN p.id, p.title ORDER BY p.title`
     }
 
     let response = await fetch('/driver', {
