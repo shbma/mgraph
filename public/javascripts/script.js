@@ -265,15 +265,18 @@ function findNearestNode(point){
 /** 
  * Сохраняет в cookies текущее состояние холста (фокус, масштаб)
  */
-function setCanvasState(){    
+function setCanvasState(cookieName='viz'){    
     let focus = viz._network.getViewPosition()
-    setCookie('viz', {
+    let state = getCookie(cookieName, true) 
+    state = state ? state : {}
+    state[getActualDeskId()] = {            
         focus: {
             x: focus.x, 
             y: focus.y
         },
         scale: viz._network.getScale()
-    });
+    }
+    setCookie('viz', state);
 }
 
 /** 
@@ -281,8 +284,11 @@ function setCanvasState(){
  */
 function getAndApplyCanvasState(cookieName='viz'){    
     let state = getCookie(cookieName, true)  
-    let visualID = findNearestNode(state.focus)  
-    viz._network.focus(visualID, {scale: state.scale})
+    let deskId = getActualDeskId()
+    if (state[deskId]){
+        let visualID = findNearestNode(state[deskId].focus)  
+        viz._network.focus(visualID, {scale: state[deskId].scale})
+    }
 }
 
 /*=================== Обработка событий ================*/
