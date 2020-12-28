@@ -1,11 +1,11 @@
 
-function getGraphInfo() {    
+async function getGraphInfo() {    
     desk = getDeskName()
     getLoginInfo()
     neo4jLogin()
     updateMenu()
     draw() 
-    start()
+    await start()
     updateGraph(false, true)
 }
 

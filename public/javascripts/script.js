@@ -241,6 +241,50 @@ function stringify(properties){
     return props.join(',')
 }
 
+/**
+ * Ищет ближайшую к данной точке вершину
+ * @param{object} - пара координат точки на холсте, например {x: 5, y: 7}
+ * @return{number} - фронтендное id ближайшего узла
+ */
+function findNearestNode(point){
+    let nodes = viz._network.body.nodes
+    let nearestNode = {
+        distance: Number.MAX_VALUE,
+        id: -1
+    }
+    Object.keys(nodes).forEach((key)=>{
+        let distance = (nodes[key].x - point.x)**2 + (nodes[key].y - point.y)**2
+        if (distance < nearestNode.distance){
+            nearestNode.distance = distance
+            nearestNode.id = nodes[key].id
+        }
+    })    
+    return nearestNode.id 
+}
+
+/** 
+ * Сохраняет в cookies текущее состояние холста (фокус, масштаб)
+ */
+function setCanvasState(){    
+    let focus = viz._network.getViewPosition()
+    setCookie('viz', {
+        focus: {
+            x: focus.x, 
+            y: focus.y
+        },
+        scale: viz._network.getScale()
+    });
+}
+
+/** 
+ * Считывает из cookies и устанавливает состояние холста 
+ */
+function getAndApplyCanvasState(cookieName='viz'){    
+    let state = getCookie(cookieName, true)  
+    let visualID = findNearestNode(state.focus)  
+    viz._network.focus(visualID, {scale: state.scale})
+}
+
 /*=================== Обработка событий ================*/
 
 /** Как только закончится стабилизация графа - включаем режим ручной расстановки вершин*/
@@ -256,10 +300,19 @@ function setStabilizedHandler(){
             }
         }) 
 
-        restoreCoordinates()  // расставим вершины по сохраненным позициям
+        restoreCoordinates()  // расставим вершины и холст по сохраненным позициям        
     })    
 }
 
+/* Как только закончили двигать/масштабировать холст, сохраним его новое состояние*/
+function setCanvasDragZoomHandler(){
+    viz._network.on('dragEnd', (e) => {        
+        setCanvasState()
+    })
+    viz._network.on('zoom', (e) => {        
+        setCanvasState()
+    })
+}
 
 /**
  * Ставит обработчики на элементы холста, как только он прорисовался
@@ -274,7 +327,8 @@ function setVisEventsHandlers(){
 
         setNodeSelectHandler()
         setNodeClickHandler()  
-        setStabilizedHandler()                   
+        setStabilizedHandler()  
+        setCanvasDragZoomHandler()          
     });
 }
 

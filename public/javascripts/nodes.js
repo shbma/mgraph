@@ -38,7 +38,8 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
                           .options[document.getElementById("size").selectedIndex]
                           .value
     cypher += ' size:' + sizeVal + '}) '
-    let coords = {x:0, y:0}
+    let focus = viz._network.getViewPosition()  // в текущий фокус камеры
+    let coords = {x: parseInt(focus.x), y: parseInt(focus.y)}    
     cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
     //console.log(cypher)
     return cypher
@@ -86,8 +87,8 @@ function addVertex(typeOfNode='instance') {
             alert(cypher)
         })
         .then(() => {
-            session.close()
-            updateGraph()
+            session.close()            
+            updateGraph(false, true)
             updateMenu()
         }) 
 
@@ -168,74 +169,6 @@ async function changeNode() {
     updateGraph()
     updateMenu()
     
-
-    /*
-    
-    //cypher += " REMOVE p:... SET p:... \""  + "\""
-    //cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
-    //typeInfo.typeID
-
-
-    cypher = "MATCH (p {id:" + nodeID + "})" +
-            " SET p.title = \"" + document.getElementById("title").value + "\"" +
-            " SET p.description = \"" + document.getElementById("desc").value + "\"" +            
-            " SET p.size = " + parseFloat(document.getElementById("type").value)
-    if (document.getElementById("sourcesInEdit")){
-        cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
-    }
-    if (document.getElementById("communityInEdit")){
-        cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
-    }
-
-    let request = { 'cypher': cypher }    
-
-    let response = await fetch('/driver', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(request)
-    })
-
-    if (response.ok) {
-        let result = await response.json()                        
-        return result[0]
-    } else {
-        console.log('Ошибка HTTP: ' + response.status)
-        return {}
-    }
-
-
-
-    let nodeID = document.getElementById("nodeSelect").value
-    let cypher = "MATCH (p {id:" + nodeID + "})" +
-            " SET p.title = \"" + document.getElementById("title").value + "\"" +
-            " SET p.description = \"" + document.getElementById("desc").value + "\"" +            
-            " SET p.size = " + parseFloat(document.getElementById("type").value)
-    if (document.getElementById("sourcesInEdit")){
-        cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
-    }
-    if (document.getElementById("communityInEdit")){
-        cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
-    }
-    //let typeInfo = await getNodeTypeInfo(nodeID)
-    //cypher += " REMOVE p:... SET p:... \""  + "\""
-    //cypher += " SET p.community = \"" + document.getElementById("communityInEdit").value + "\""
-    //typeInfo.typeID
-
-    var setSession = driver.session()
-    setSession
-        .run(cypher)
-        .then(result => {
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => {
-            setSession.close()
-            updateGraph()
-            updateMenu()
-        })*/
 } 
 
 function removeNode() {
@@ -247,7 +180,7 @@ function removeNode() {
         .catch(error => {
             console.log(error)
         })
-        .then(() => {
+        .then(() => {            
             session.close()
             //updateGraph(true)
             visualID = getVisualNodeIdByRealId(document.getElementById("nodeSelect").value)            
@@ -478,6 +411,7 @@ function saveCoordinates(){
 
 /** 
  * Расставляет вершины по сохраненным ранее в базе координатам
+ * и возвращает холст на прежние координаты и масштаб
  */
 function restoreCoordinates(){
     var session = driver.session()    
@@ -498,7 +432,10 @@ function restoreCoordinates(){
         .catch(error => {
             console.log(error)
         })
-        .then(() => session.close())    
+        .then(() => {
+            session.close()
+            getAndApplyCanvasState()  // подвинем холст в сохраненное состояние               
+        })    
 }
 
 /** ставит камеру на узел, чей ID из базы данных передан в фунцию*/
