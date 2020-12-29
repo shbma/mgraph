@@ -1,0 +1,10 @@
+<fieldset name="deskInfo" id="deskInfo">
+    <label for="url">Доска [<%=desk.type%>]:</label><br>               
+    <select id="deskSelect" name="deskSelect" actual-id="<%=desk.id%>" actual-title="<%=desk.title%>" onchange="deskChange()">
+    </select><br>
+
+    <label for="url">Использует типологию:</label><br>                
+    <select id="typoSelect" name="typoSelect" actual-id="<%=typo.id%>" onchange="">
+
+    </select><br>    
+</fieldset>

@@ -1,206 +1,174 @@
-
-/** 
- * Считывает название Типа вершины из поля формы. Если это "Новый тип",
- * то для него создается раздел в config.labels. 
- * @return {object} контейнер с названием и сведениями о состоянии
- *   {
-       name: название типа, 
- *     isNew: флаг - новый ли,
- *     isFirstLevel: флаг - верхний ли уровень наследования,
- *     error: флаг ошибки
- *    }
- */
-function handleTemplateName(){
-    let result = {name: "", isNew: false, isFirstLevel: false, error: false}
-
-    let templatesSelector = document.getElementById("Label")
-    if(templatesSelector.options[templatesSelector.selectedIndex].text === "Новый тип") {
-        result.isNew = true
-        if(document.getElementById("nameOfLabel").value === "") {
-            result.error = true
-        } else {
-            result.isFirstLevel = true
-            result.name = replacementSpaces(document.getElementById("nameOfLabel").value)
-            document.getElementById("extendsLabel").add(new Option(result.name))        
-            templatesSelector.add(new Option(result.name))
-            config.labels[result.name] = {
-                caption: "title",
-                size: "size",
-                community: "community"
-            }
-        } 
-    }
-    else {
-        result.name = templatesSelector.options[templatesSelector.selectedIndex].text
-    }
-    return result
+/** Выдает имя выбранного типа вершины */
+function getTemplateInfo(){
+    let templatesSelector = document.getElementById("theTypeSelectInAdd")
+    let text = templatesSelector.options[templatesSelector.selectedIndex].text
+    let value = templatesSelector.options[templatesSelector.selectedIndex].value
+    return {'title': text, 'id': value}
 }
 
-/** Добавляет вершину выбранного типа в граф */
-function addNodeByTamplateClick() {
-    if(document.getElementById("caption").value === "") {
-        return
+/**
+ * Выдает cypher-запрос на добавление новой вершины (типа или его экземпляра)
+ * @param{string} typeOfNode - тип вершины: это класс('type') или экземпляр('instance')
+ * @param{string} caption - имя создаваемой вершины
+ * @param{number} community - код группы вершин (для класса задать, для экземпляра достанет сам)
+ * @param{string} templateName - метка (имя типа), которая присваивается вершине
+ */
+function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templateName){
+    let cypher ="MATCH (n) WITH max(n.id) AS last_ID " 
+    if (typeOfNode == 'instance'){  // достанем с типологии код сообщества
+        let cond = deskCondition('a', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
+        cypher += `
+            CALL {
+                MATCH ` + cond + `WHERE a.id=` + getTemplateInfo().id + 
+                ` RETURN a.community AS tCommunity
+               } ` 
+        community = 'tCommunity'
+    }                
+    cypher += "MATCH " + deskCondition('', 'd', '', interest=deskInterest.DESK) 
+    cypher +=" CREATE (a:" + templateName
+              
+    cypher += "{"             
+
+    cypher += ' title: "' + caption + '", '
+    cypher += ' id: last_ID+1, '
+    cypher += ' community: ' + community  + ', ' 
+    cypher += ' description: "' + document.getElementById("description").value  + '", ' 
+    cypher += ' sources: "' + document.getElementById("sourcesInAdd").value  + '", ' 
+    let sizeVal = document.getElementById("size")
+                          .options[document.getElementById("size").selectedIndex]
+                          .value
+    cypher += ' size:' + sizeVal + '}) '
+    let focus = viz._network.getViewPosition()  // в текущий фокус камеры
+    let coords = {x: parseInt(focus.x), y: parseInt(focus.y)}    
+    cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
+    //console.log(cypher)
+    return cypher
+}
+
+/** 
+ * Добавляет вершину выбранного типа в граф 
+ * @param{string} тип вершины - это класс('type') или экземпляр('instance')
+ */
+function addVertex(typeOfNode='instance') {
+    let caption = document.getElementById("caption").value
+    if(caption === "") {
+        return 'error: empty caption'
     }
-    templateInfo = handleTemplateName()    
-    if (templateInfo.error) {
-        return
+    
+    let templateName = ''
+    let community = 0
+    
+    if (typeOfNode == 'type'){
+        community = document.getElementById("communityInAdd").value
+        if (isNaN(parseInt(community)) || parseInt(community) < 0) {
+            return 'error: bad community'
+        }
+        templateName = 'Тип'
+    } else if (typeOfNode == 'instance'){
+        templateName = getTemplateInfo().title
+    }   
+    
+    config.labels[caption] = {
+        caption: "title",
+        size: "size",
+        community: "community"
     }
-    console.log("MATCH (n:" + templateInfo.name + ") RETURN n.community")
-    let session = driver.session()
+
+    let cypher = makeCypher4VertexAdd(typeOfNode, caption, community, templateName)
+
+    // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
+    var session = driver.session()
     session
-        .run("MATCH (n:" + templateInfo.name + ") RETURN n.community")
-        .then(result => {
-            let community = result.records[0].get("n.community")
-
-            let cypher ="MATCH (n) WITH max(n.community) AS last_community, max(n.id) AS last_ID " 
-            cypher += "MATCH " + deskCondition('', 'd', '', interest=deskInterest.DESK) 
-            cypher +=" CREATE (a:" + templateInfo.name
-            
-            // собираем в запрос свойства
-            let propertys = readPropertys("Label")
-            let isFirstProperty = propertys === "" ? true : false
-            cypher += "{" + propertys
-            if (!isFirstProperty) {
-                cypher += ","
-            }
-            
-            let community_id = templateInfo.isNew ? " last_community+1 " : community
-
-            cypher += ' title: "' + document.getElementById("caption").value + '", '
-            cypher += ' id: last_ID+1, '
-            cypher += ' community: ' + community_id  + ', '            
-            cypher += ' x: 0, y: 0, '
-            let sizeVal = document.getElementById("size")
-                                  .options[document.getElementById("size").selectedIndex]
-                                  .value
-            cypher += ' size:' + sizeVal + '}) '
-            let coords = {x:0, y:0}
-            cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
-            console.log(cypher)
-
-            // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
-            var subSession = driver.session()
-            subSession
-                .run(cypher)
-                .then(() => {})
-                .catch(error => {
-                    console.log(error)
-                    alert("Не получилось добавить вершину. Возможно вы где-то ввели недопустимый символ.")
-                    alert(cypher)
-                })
-                .then(() => {
-                    session.close()
-                    updateGraph()
-                    updateMenu()
-                }) 
-
-        })
+        .run(cypher)
+        .then(() => {})
         .catch(error => {
-            console.log(error)            
-            alert("Ошибка запроса к БД. Не удалось прочитать тип вершины.")            
+            console.log(error)
+            alert("Не получилось добавить вершину. Возможно вы где-то ввели недопустимый символ.")
+            alert(cypher)
         })
+        .then(() => {
+            session.close()            
+            updateGraph(false, true)
+            updateMenu()
+        }) 
 
     newPropertysLabelCount = 0
-    templateChanged(templateInfo.isFirstLevel, "Label")
     document.getElementById("caption").value = ""
 }
 
-function clickOnUL(event) {
-    let selectedNodeId = event.target.closest("li").value
-    let nodeSelector = document.getElementById("nodeSelect")
-    for (let i = 0; i < nodeSelector.options.length; i++){
-        if (nodeSelector.options[i].value == selectedNodeId) {
-            nodeSelector.selectedIndex = i
-            getSelectedNodeInfo()
-            return
-        }
+/** выдает объект с параметрами вершины*/
+async function getNodeParameters(nodeID){
+    let request = { 
+            'cypher': ` MATCH (n {id:` + nodeID + `}) 
+                        RETURN n.title AS title, n.community AS community`
+        }    
+    let response = await fetch('/driver', {        
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })        
+    if (!response.ok) {
+        console.log('Ошибка HTTP in changeNode: ' + response.status)
+        return
     }
+    let result = await response.json()                        
+    return result[0]
 }
 
-function searchNodeByName(inputNode, UL, clickOnULFunction) {
-    let input = document.getElementById(inputNode).value.toLowerCase().trim()
-    let list = document.getElementById(UL)
-    clearUL(UL)
-    if (input === ""){return}
-    let nodeSelector = document.getElementById("nodeSelect")
-    for (let i = 0; i < nodeSelector.options.length; i++){
-        if (nodeSelector.options[i].text.toLowerCase().indexOf(input) >= 0) {
-            console.log(input + " : " + nodeSelector.options[i].text.toLowerCase())
-            let li = document.createElement("li")
-            li.value = nodeSelector.options[i].value
-            li.onclick = (event) => clickOnULFunction(event, inputNode, UL)
-            let a = document.createElement("a")
-            a.text = nodeSelector.options[i].text
-
-            li.appendChild(a)
-            list.appendChild(li)
-        }
+async function changeNode() {
+    let communityNew = null
+    let cypherTypeAddon = ''    
+    let nodeID = document.getElementById("nodeSelect").value
+    let typeSelector = document.getElementById("theTypeSelectInEdit")
+    if (typeSelector) {
+        typeID = typeSelector.value
+        // узнаем параметры новой метки
+        let typeInfo = await getNodeParameters(typeID)                      
+        let labelNew = typeInfo['title']
+        communityNew = typeInfo['community']
+        // узнаем текущую метку вершины
+        typeInfo = await getNodeTypeInfo(nodeID)
+        let labelOld = typeInfo.title
+        
+        cypherTypeAddon = ' REMOVE p:' + labelOld + ' SET p:' + labelNew + ' '
+        }    
+        
+    // сформируем запрос в БД на изменения
+    let cypher = "MATCH (p {id:" + nodeID + "})" +
+        cypherTypeAddon + 
+        " SET p.title = \"" + document.getElementById("title").value + "\"" +
+        " SET p.description = \"" + document.getElementById("desc").value + "\"" +            
+        " SET p.size = " + parseFloat(document.getElementById("type").value)
+    if (document.getElementById("sourcesInEdit")){
+        cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
     }
-}
+    if (document.getElementById("communityInEdit")){
+        communityNew = document.getElementById("communityInEdit").value
+    }
+    if (communityNew != null){
+        cypher += ' SET p.community = ' + communityNew
+    }
+    cypher += ' RETURN p;'
+    console.log(cypher)
 
-function addNode() {
-    let availableId = 0
-    var idSession = driver.session()
-    idSession
-        .run("MATCH (p) RETURN p.id ORDER BY p.id DESC LIMIT 1")
-        .then(result => {
-            result.records.forEach(record => {
-                availableId = 1 + parseInt(record.get("p.id"))
-            })
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => {
-            idSession.close()
-        })
-        .then(() => {
-            var createSession = driver.session()
-            let topic = document.getElementById("newTopic").value
-            if (topic === "Создать новую тему") {
-                topic = document.getElementById("newTitle").value
-                communities.push(topic)
-            }
-            createSession
-                .run('CREATE (a' + availableId + ':Node {title: "' + document.getElementById("newTitle").value +
-                    '", topic:"' + topic +
-                    '", topicNumber:"' + communities.indexOf(topic) +
-                    '", description:"' + document.getElementById("newDesc").value +                    
-                    ' , id:' + availableId +
-                    ', size:' + parseFloat(document.getElementById("newType").value) + '})')
-                .then(() => { 
-                })
-                .catch(error => {
-                    console.log(error)
-                })
-                .then(() => {
-                    createSession.close()
-                    updateGraph()
-                    updateMenu()
-                })
-        })
-}
-
-function changeNode() {
-    var setSession = driver.session()
-    setSession
-        .run(
-            "MATCH (p {id:" + document.getElementById("nodeSelect").value + "})" +
-            " SET p.title = \"" + document.getElementById("title").value + "\"" +
-            " SET p.description = \"" + document.getElementById("desc").value + "\"" +
-            " SET p.use = [\"" + document.getElementById("use").value.split(",").join("\" , \"") + "\"]" +
-            " SET p.size = " + parseFloat(document.getElementById("type").value)
-        )
-        .then(result => {
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => {
-            setSession.close()
-            updateGraph()
-            updateMenu()
-        })
+    // выполним запрос
+    let request = { 'cypher': cypher }
+    let response = await fetch('/driver', {        
+        method: 'PATCH',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+    if (!response.ok) {
+        console.log('Ошибка HTTP in changeNode: ' + response.status)
+        return
+    }
+    updateGraph()
+    updateMenu()
+    
 } 
 
 function removeNode() {
@@ -212,7 +180,7 @@ function removeNode() {
         .catch(error => {
             console.log(error)
         })
-        .then(() => {
+        .then(() => {            
             session.close()
             //updateGraph(true)
             visualID = getVisualNodeIdByRealId(document.getElementById("nodeSelect").value)            
@@ -222,67 +190,149 @@ function removeNode() {
         })
 }
 
-function getNodes() {
-    //{desk:"' + getDeskName() + '"}
-    var session = driver.session()
-    session
-        .run('MATCH (p) RETURN p.id, p.title ORDER BY p.id')
-        .then(result => {
-            result.records.forEach(record => {
-                let text = "<" + record.get("p.id") + ">:" + record.get("p.title")
-                for (let i = 0; i < selectorsID.length; i++)
-                    document.getElementById(selectorsID[i]).add(new Option(text, record.get("p.id"), false, false))
-            })
-        })
-        .catch(error => {
-            console.log(error) 
-        })
-        .then(() => {
-            var subSession = driver.session()
-            subSession
-                .run('MATCH (p) RETURN DISTINCT p.topic, p.topicNumber')
-                .then(result => {
-                    result.records.forEach(record => {
-                        communities[record._fields[1]] = (record._fields[0])
-                    })
+/**
+ * Выбирает все вершины с данной доски и заполняет ими списки выбора,
+ * id которых лежат в массиве selectorsID
+ */
+async function getNodes() {
+    let request = {
+        'cypher': `MATCH (p) WHERE ` + deskCondition('p') + `
+                   RETURN p.id, p.title ORDER BY p.title`
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {
+                result.map(record => {
+                    let text = "<" + record['p.id'] + ">:" + record['p.title']
+                    for (let i = 0; i < selectorsID.length; i++)
+                        document.getElementById(selectorsID[i]).add(new Option(text, record['p.id'], false, false))
                 })
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => {
-            session.close()
-            getSelectedNodeInfo()
-        })
+            })
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
+
 }
 
-function getSelectedNodeInfo() {
-    var session = driver.session()
+/**
+ * Выдает данные по типу заданного экземпляра вершины
+ * @param{number} instanceID - id вершины, для которой добываем свойства типа
+ * @return{objectr} значения свойств типа нужной вершины, 
+ *                  например {'typeID':127, 'community':5, 'title': "Знание"}
+ */
+async function getNodeTypeInfo(instanceID){
+    let cond_typo = deskCondition('t', 'dt', '', deskInterest.RELDESK, {}, deskType='Типология')  
+    
+    let request = {
+        'cypher': ` MATCH (s {id:` + instanceID + `}) 
+                    CALL {
+                        WITH s
+                        MATCH ` + cond_typo + ` 
+                        WHERE t.title=labels(s)[0]
+                        RETURN t.id as typeID, t.community AS community, t.title AS title
+                    } 
+                    RETURN typeID, community, title`
+    }    
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        let result = await response.json()                        
+        return result[0]
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+        return {}
+    }
+}
+
+/** 
+ * Зполняет списки с типами вершин. Может поставить выбранной по конретному id.
+ * @param{string} id элемента со списком выбра на html-странице
+ * @param{string} whichID - id элемента, чей тип надо поставить выбранным
+ */
+async function fillTypeSelector(selector, whichID=''){
+    let selEl = document.getElementById(selector)    
+    if (selEl){
+        let selectedTypeId = null
+        if (whichID){              
+            let info = await getNodeTypeInfo(whichID)
+            selectedTypeId = info.typeID            
+        } 
+        let cond = deskCondition('n', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
+        fillingSelect(selector, 
+                    'MATCH ' + cond + ' RETURN DISTINCT n.title, n.id', 
+                    'n.title', 'n.id', selectedTypeId)
+    }
+}
+
+/**
+ * Запрашивает информацию с выбранного узла и заполняет по ней форму редактирования
+ */
+async function getSelectedNodeInfo() {
     let id = document.getElementById("nodeSelect").value
     if (id === "") return
-    session
-        .run("MATCH (p {id: " + id + "}) RETURN p.description, p.use, p.title, p.topic, p.size LIMIT 1")
-        .then(result => {
-            result.records.forEach(record => {
-                document.getElementById("desc").value = record.get("p.description")
-                document.getElementById("title").value = record.get("p.title")
-                document.getElementById("topic").value = record.get("p.topic")
-                document.getElementById("use").value = record.get("p.use").join(", ")
 
-                let size = record.get("p.size")
-                let sizeOptions = document.getElementById("type").options
-                for (let i = 0; i < sizeOptions.length; i++) {
-                    if (size == sizeOptions[i].value) {
-                        document.getElementById("type").selectedIndex = i
-                        break
+    let request = {
+        'cypher': 'MATCH (p {id: ' + id + '}) RETURN p.description, p.sources, p.title, p.size, p.community, p.id LIMIT 1'
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {
+                result.map(record => {
+                    document.getElementById("desc").value = 
+                        record["p.description"] != undefined ? record["p.description"] : ''
+                    document.getElementById("title").value = 
+                        record["p.title"] != undefined ? record["p.title"] : ''
+                    document.getElementById("sourcesInEdit").value = 
+                        record["p.sources"] != undefined ? record["p.sources"] : ''
+                    if (document.getElementById("communityInEdit")) {
+                        document.getElementById("communityInEdit").value = 
+                            record["p.community"] != undefined ? record["p.community"] : ''
                     }
-                }
+
+                    fillTypeSelector("theTypeSelectInEdit", record["p.id"])
+
+                    let size = record["p.size"]
+                    // типоразмер
+                    let sizeOptions = document.getElementById("type").options
+                    for (let i = 0; i < sizeOptions.length; i++) {
+                        if (size == sizeOptions[i].value) {
+                            document.getElementById("type").selectedIndex = i
+                            break
+                        }
+                    }
+
+                })
             })
-        })
-        .catch(error => {
-            console.log(error)
-        })
-        .then(() => session.close())
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
 }
 
 /**
@@ -329,34 +379,39 @@ function saveCoordinates(){
     let pos = viz._network.getPositions()  // считаем все координаты всех вершин 
     // в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
 
-    // несколько запросов
-    let cypher = ''
+    // соберем все в один запрос
+    let cypherMatchNodes = ' MATCH '
+    let cypherMatchRelations = ' MATCH '
+    let cypherSET = ' SET '
     Object.keys(pos).forEach(visualId => {        
         id = parseInt(getVisualNodeProperties(visualId).id)
         nodeName = 'id' + id
         relName = 'r' + id 
-        cypher = ' MATCH (' + nodeName +' {id: ' + id + '}) '
-        cypher += ' MATCH ' + deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ' '
-        cypher += ' SET ' + relName + '.x=' + pos[visualId].x + ', ' 
-        cypher += relName + '.y=' + pos[visualId].y + '; ' 
+        cypherMatchNodes += '(' + nodeName +' {id: ' + id + '}), '
+        cypherMatchRelations += deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ', '
+        cypherSET += relName + '.x=' + pos[visualId].x + ', ' 
+        cypherSET += relName + '.y=' + pos[visualId].y + ', ' 
+    })
+    cypherMatchNodes = cypherMatchNodes.slice(0, -2); //отрежем ', ' с хвостов
+    cypherMatchRelations = cypherMatchRelations.slice(0, -2);
+    cypherSET = cypherSET.slice(0, -2)
     
-        var session = driver.session()    
-        session
-            .run(cypher)
-            .then(result => {
-                console.log(cypher)
-	    })
-            .catch(error => {
-                console.log(error)
-            })
-            .then(() => session.close())
-        })
-            
+    cypher = cypherMatchNodes + cypherMatchRelations + cypherSET 
  
+    //и отправим на сервер
+    var session = driver.session()    
+    session
+        .run(cypher)
+        .then(result => {})
+        .catch(error => {
+            console.log(error)
+        })
+        .then(() => session.close())
 }
 
 /** 
  * Расставляет вершины по сохраненным ранее в базе координатам
+ * и возвращает холст на прежние координаты и масштаб
  */
 function restoreCoordinates(){
     var session = driver.session()    
@@ -377,9 +432,17 @@ function restoreCoordinates(){
         .catch(error => {
             console.log(error)
         })
-        .then(() => session.close())    
+        .then(() => {
+            session.close()
+            getAndApplyCanvasState()  // подвинем холст в сохраненное состояние               
+        })    
 }
 
+/** ставит камеру на узел, чей ID из базы данных передан в фунцию*/
+function focusOnNode(realID){
+    let visualID = getVisualNodeIdByRealId(realID)    
+    viz._network.focus(visualID)
+}
 
 /*=================== Обработка событий ================*/
 

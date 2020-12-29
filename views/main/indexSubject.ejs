@@ -13,10 +13,11 @@
         </form>
     </div>
     <div id="sidebar" class="menu-bar" scroll="yes">
-        <form id="graphMenu" class="graphMenu" name="graphMenu">            
+        <form id="graphMenu" class="graphMenu" name="graphMenu">                 
+            <%- include('../desks/deskSubject')%> 
+            <%- include('../search') %>       
             <%- include('../filters/depth') %>            
-            <%- include('../filters/section') %>
-            <%- include('../search') %> 
+            <%- include('../filters/section') %>            
 
             <fieldset name="search" id="refresh" class="colLeft">
                 <br><button type="button" onclick="updateGraph(true)">Обновить визуализацию</button><br>

@@ -40,4 +40,21 @@ module.exports = {
                 throw e
             })
     },
+
+    beautify: (records) => {  // уплощает структуру результата запроса
+        let array = []
+        let keys = records[0].keys
+        records.forEach(record => {
+            let newRecord = {}
+            for(let i = 0; i < record._fields.length; i++) {
+                if (typeof(record._fields[i]) == 'object') {
+                    newRecord[keys[i]] = record._fields[i] != null ? record._fields[i].low : null
+                } else {
+                    newRecord[keys[i]] = record._fields[i]
+                }
+            }
+            array.push(newRecord)
+        })
+        return array
+    }
 }

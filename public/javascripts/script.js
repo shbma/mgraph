@@ -44,42 +44,45 @@ function updateMenu() {
     getNodes()
 }
 
-function fillingSelect(select, cypherCode, captionOfResult) {    
-    let templateSession = driver.session()
-    templateSession
-        .run(cypherCode)
-        .then(result => {       
-            if (result.records == 0) console.log('no results')     
-            for(let template of result.records) {                
-                let captionOfTemplate = template.get(captionOfResult)                                
-                document.getElementById(select).add(new Option(captionOfTemplate))
-                if(select === "Label") {
-                    config.labels[captionOfTemplate] = {
-                        caption: "title",
-                        size: "size",
-                        community: "community",
-                        //image: 'https://visjs.org/images/visjs_logo.png'
-                    }                    
-                    /*config.labels["Node"] = {  // если индивидуально под вершину
-                        caption: "title",
-                        size: "size",
-                        community: "topicNumber",
-                        image: 'https://visjs.org/images/visjs_logo.png'
-                    }*/
-                }
-            }
-        })
-        .catch(error => {console.log(error)})
-        .then(() => {
-            templateSession.close()
-        })
+async function fillingSelect(select, cypherCode, captionOfResult, valueOfResult='', selectedValue=null) {        
+    let request = {
+        'cypher': cypherCode
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {                
+                if (result.length == 0) console.log('no results')     
+                // очистим список и заполним заново                      
+                document.querySelectorAll('#'+select+' option').forEach(option => option.remove()) 
+                for(let template of result) {                
+                    let captionOfTemplate = template[captionOfResult]                          
+                    let valueOfTemplate = valueOfResult ? template[valueOfResult] : valueOfResult
+                    let isSelected = valueOfTemplate == selectedValue
+                    document.getElementById(select).add(new Option(captionOfTemplate, valueOfTemplate, false, isSelected))
+                }    
+            })
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
+
 }
 
-function clearSelect(selectID) {    
+function clearSelect(selectID) {        
     for (let i = document.getElementById(selectID).options.length - 1; i >= 0; i--)
         document.getElementById(selectID).options[i] = null
 }
 
+// использовалась при добавлении узла --> TODO проверить, что нигде еще не нужна и удалить
 function templateChanged(isFirstLevel, templateType) {
     document.getElementById("div3" + templateType).innerHTML = ""
     let templatesSelector = document.getElementById(templateType)
@@ -145,6 +148,7 @@ function templateChanged(isFirstLevel, templateType) {
     newPropertysTypeCount = 0
 }
 
+// использовалось при добавлени свойств узла --> TODO проверить есть ли где-то еще и удалить
 function addPropertyClick(templateType) {
     let numberOfNewProperty = 0
     let propertys = []
@@ -212,31 +216,6 @@ function readPropertys(templateType) {
     return cypher
 }
 
-function clickOnULSearch(event, node, UL) {
-    let selectedNodeId = event.target.closest("li").value
-    let nodeSelector = document.getElementById("nodeSelect")
-    for (let i = 0; i < nodeSelector.options.length; i++){
-        if (nodeSelector.options[i].value == selectedNodeId) {
-            document.getElementById(node).value = nodeSelector.options[i].text
-            clearUL(UL)
-            if(node === "firstNode") {
-                firstNodeID = selectedNodeId
-            }
-            else {
-                secondNodeID = selectedNodeId
-            }
-            return
-        }
-    }
-}
-
-function clearUL(UL) {
-    let list = document.getElementById(UL)
-    while (list.hasChildNodes()) {
-        list.removeChild(list.firstChild);
-    }
-}
-
 function replacementSpaces(caption) {
     let indexOfSpace
     while ((indexOfSpace = caption.indexOf(" ")) != -1) {
@@ -262,6 +241,56 @@ function stringify(properties){
     return props.join(',')
 }
 
+/**
+ * Ищет ближайшую к данной точке вершину
+ * @param{object} - пара координат точки на холсте, например {x: 5, y: 7}
+ * @return{number} - фронтендное id ближайшего узла
+ */
+function findNearestNode(point){
+    let nodes = viz._network.body.nodes
+    let nearestNode = {
+        distance: Number.MAX_VALUE,
+        id: -1
+    }
+    Object.keys(nodes).forEach((key)=>{
+        let distance = (nodes[key].x - point.x)**2 + (nodes[key].y - point.y)**2
+        if (distance < nearestNode.distance){
+            nearestNode.distance = distance
+            nearestNode.id = nodes[key].id
+        }
+    })    
+    return nearestNode.id 
+}
+
+/** 
+ * Сохраняет в cookies текущее состояние холста (фокус, масштаб)
+ */
+function setCanvasState(cookieName='viz'){    
+    let focus = viz._network.getViewPosition()
+    let state = getCookie(cookieName, true) 
+    state = state ? state : {}
+    state[getActualDeskId()] = {            
+        focus: {
+            x: focus.x, 
+            y: focus.y
+        },
+        scale: viz._network.getScale()
+    }
+    setCookie('viz', state);
+}
+
+/** 
+ * Считывает из cookies и устанавливает состояние холста 
+ */
+function getAndApplyCanvasState(cookieName='viz'){    
+    let state = getCookie(cookieName, true)  
+    let deskId = getActualDeskId()
+    if (state[deskId]){
+        let visualID = findNearestNode(state[deskId].focus)  
+        viz._network.focus(visualID, {scale: state[deskId].scale})
+    }
+}
+
 /*=================== Обработка событий ================*/
 
 /** Как только закончится стабилизация графа - включаем режим ручной расстановки вершин*/
@@ -277,10 +306,19 @@ function setStabilizedHandler(){
             }
         }) 
 
-        restoreCoordinates()  // расставим вершины по сохраненным позициям
+        restoreCoordinates()  // расставим вершины и холст по сохраненным позициям        
     })    
 }
 
+/* Как только закончили двигать/масштабировать холст, сохраним его новое состояние*/
+function setCanvasDragZoomHandler(){
+    viz._network.on('dragEnd', (e) => {        
+        setCanvasState()
+    })
+    viz._network.on('zoom', (e) => {        
+        setCanvasState()
+    })
+}
 
 /**
  * Ставит обработчики на элементы холста, как только он прорисовался
@@ -288,12 +326,15 @@ function setStabilizedHandler(){
  */
 function setVisEventsHandlers(){
     viz.registerOnEvent("completed", (e)=>{
+        viz._network.stopSimulation() // остановим автоматическое размещение вершин
+
         // разрешим множественное выделение
         viz._network.interactionHandler.selectionHandler.options.multiselect = true
 
         setNodeSelectHandler()
         setNodeClickHandler()  
-        setStabilizedHandler()                   
+        setStabilizedHandler()  
+        setCanvasDragZoomHandler()          
     });
 }
 

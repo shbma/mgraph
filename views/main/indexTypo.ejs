@@ -1,31 +1,32 @@
 <%- include('head') %>
 
-<body style="overflow: hidden;">        
-    <div id="menu" scroll="yes">
-        <form id="graphMenu" name="graphMenu">
-            <%- include('../relations/relations') %>
-
-            <%- include('../login')  %>                      
-
-            <%- include('../search') %>	
-
+<body style="overflow: hidden;">            
+    <div id="menu" class="menu-bar" scroll="yes">
+        <form id="graphMenu" class="graphMenu" name="graphMenu">
+            <%- include('../login')  %>                                  
+            <%- include('../relations/relations') %>            
+            
             <%- include('../nodes/addType') %>
-
-            <%- include('../filters/depth') %>            
-
             <%- include('../nodes/editType') %>            
 
-            <%- include('../filters/section') %>
+            <%- include('removeInFuture') %> 
+
+        </form>
+    </div>
+    <div id="sidebar" class="menu-bar" scroll="yes">
+        <form id="graphMenu" class="graphMenu" name="graphMenu">    
+            <%- include('../desks/deskTypo')%>  
+            <%- include('../search') %>        
+            <%- include('../filters/depth') %>            
+            <%- include('../filters/section') %>            
 
             <fieldset name="search" id="refresh" class="colLeft">
                 <br><button type="button" onclick="updateGraph(true)">Обновить визуализацию</button><br>
             </fieldset>
-
             <fieldset name="saveCoords" id="saveCoords" class="colLeft">
                 <br><button type="button" onclick="saveCoordinates()">Сохранить координаты</button><br>
             </fieldset>
 
-            <%- include('removeInFuture') %>
         </form>
     </div>
 
