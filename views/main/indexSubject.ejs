@@ -3,11 +3,9 @@
 <body style="overflow: hidden;">            
     <div id="menu" class="menu-bar" scroll="yes">
         <form id="graphMenu" class="graphMenu" name="graphMenu">
-            <%- include('../login')  %>                                  
-            <%- include('../relations/relations') %>            
+            <%- include('../login')  %>                                              
             <%- include('../nodes/addNode') %>
             <%- include('../nodes/editNode') %>                                    
-
             <%- include('removeInFuture') %>
 
         </form>
@@ -16,6 +14,7 @@
         <form id="graphMenu" class="graphMenu" name="graphMenu">                 
             <%- include('../desks/deskSubject')%> 
             <%- include('../search') %>       
+            <%- include('../relations/relations') %>            
             <%- include('../filters/depth') %>            
             <%- include('../filters/section') %>            
 

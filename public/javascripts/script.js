@@ -262,6 +262,16 @@ function findNearestNode(point){
     return nearestNode.id 
 }
 
+/**
+ * Устанавливает фокус камеры на узел, ближайший к point
+ * @param{object} point - точка прицела, например {x: 20, y:-52}
+ * @param{object} parameters - дополнительные параметры, например масштаб {scale: 1})
+ */
+function setCanvasFocusNearPoint(point, parameters={}){
+    let visualID = findNearestNode(point)  
+    viz._network.focus(visualID, parameters)
+}
+
 /** 
  * Сохраняет в cookies текущее состояние холста (фокус, масштаб)
  */
@@ -285,9 +295,8 @@ function setCanvasState(cookieName='viz'){
 function getAndApplyCanvasState(cookieName='viz'){    
     let state = getCookie(cookieName, true)  
     let deskId = getActualDeskId()
-    if (state[deskId]){
-        let visualID = findNearestNode(state[deskId].focus)  
-        viz._network.focus(visualID, {scale: state[deskId].scale})
+    if (state[deskId]){ 
+        setCanvasFocusNearPoint(state[deskId].focus, {scale: state[deskId].scale})
     }
 }
 

@@ -121,3 +121,7 @@
 #dropDownUL li a:hover:not(.header) {
     background-color: #eee;
 }
+
+.previous-cord-box{
+    display:none;
+}

@@ -1,6 +1,10 @@
 <fieldset name="search" id="search">
-    <legend align="left">Поиск</legend>
+    <legend align="left">Поиск по вершинам</legend>
     <input type="text" oninput="searchNodeByName('nodeSearch', 'dropDownUL', clickOnULSearch)" id="nodeSearch">
     <ul id="dropDownUL">
     </ul>
+    <div class="previous-cord-box" x="" y=""></div>    
+</fieldset>
+<fieldset name="gobacksearch" id="gobacksearch">
+    <br><button type="button" onclick="restoreBeforeSearchPos()">Вернуть как до поиска</button><br>
 </fieldset>

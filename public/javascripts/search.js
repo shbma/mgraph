@@ -5,11 +5,24 @@ function clickOnULSearch(event, node, UL) {
         if (nodeSelector.options[i].value == selectedNodeId) {
             document.getElementById(node).value = nodeSelector.options[i].text
             realId = nodeSelector.options[i].value
+            rememberBeforeSearchPos()
             focusOnNode(realId)
             clearUL(UL)            
             return
         }
     }
+}
+
+function rememberBeforeSearchPos(){
+    let focus = viz._network.getViewPosition()
+    $('.previous-cord-box').attr('x', focus.x)
+    $('.previous-cord-box').attr('y', focus.y)        
+}
+
+function restoreBeforeSearchPos(){
+    let xOld = parseInt($('.previous-cord-box').attr('x'))
+    let yOld = parseInt($('.previous-cord-box').attr('y'))        
+    setCanvasFocusNearPoint({x: xOld, y: yOld})
 }
 
 function clearUL(UL) {
