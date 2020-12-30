@@ -333,6 +333,7 @@ function setVisEventsHandlers(){
 
         setNodeSelectHandler()
         setNodeClickHandler()  
+        setNodeDragHandler()
         setStabilizedHandler()  
         setCanvasDragZoomHandler()          
     });

@@ -409,6 +409,40 @@ function saveCoordinates(){
         .then(() => session.close())
 }
 
+/**
+ * Сохраняет координаты кокретной вершины с холста в БД
+ * @param{number} visualID - фронтендный id вершины
+ */
+function saveSingleNodeCoordinates(visualId){        
+    let pos = viz._network.getPositions(visualId)  // считаем все координаты всех вершин 
+    // в виде в pos={458: {x:-10, y:15} } - пример для visualID = 458
+
+    // соберем все в один запрос
+    let cypherMatchNodes = ' MATCH '
+    let cypherMatchRelations = ' MATCH '
+    let cypherSET = ' SET '
+    
+    id = parseInt(getVisualNodeProperties(visualId).id)
+    nodeName = 'id' + id
+    relName = 'r' + id 
+    cypherMatchNodes += '(' + nodeName +' {id: ' + id + '}) '
+    cypherMatchRelations += deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ' '
+    cypherSET += relName + '.x=' + pos[visualId].x + ', ' 
+    cypherSET += relName + '.y=' + pos[visualId].y + ' ' 
+    
+    cypher = cypherMatchNodes + cypherMatchRelations + cypherSET 
+
+    //и отправим на сервер
+    var session = driver.session()    
+    session
+        .run(cypher)
+        .then(result => {})
+        .catch(error => {
+            console.log(error)
+        })
+        .then(() => session.close())
+}
+
 /** 
  * Расставляет вершины по сохраненным ранее в базе координатам
  * и возвращает холст на прежние координаты и масштаб
@@ -493,5 +527,21 @@ function setNodeClickHandler(){
             }
         }
         
+    })
+}
+
+/**
+ * Привязывает обработчик к окончанию перетаскивания вершин(ы).
+ * По событию - сохраняются в БД текущие координаты перемешенной вершин(ы)
+ */
+function setNodeDragHandler(){
+    viz._network.on('dragEnd', (event) => {        
+        let nodes = event.nodes    
+        if (nodes.length == 0) {
+            return
+        }
+        nodes.forEach((nodeID) => {
+            saveSingleNodeCoordinates(nodeID)
+        })    
     })
 }
