@@ -34,6 +34,7 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
     cypher += ' community: ' + community  + ', ' 
     cypher += ' description: "' + document.getElementById("description").value  + '", ' 
     cypher += ' sources: "' + document.getElementById("sourcesInAdd").value  + '", ' 
+    cypher += ' timesize: "' + document.getElementById("timeSizeInAdd").value  + '", ' 
     let sizeVal = document.getElementById("size")
                           .options[document.getElementById("size").selectedIndex]
                           .value
@@ -143,6 +144,9 @@ async function changeNode() {
         " SET p.size = " + parseFloat(document.getElementById("type").value)
     if (document.getElementById("sourcesInEdit")){
         cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
+    }
+    if (document.getElementById("timeSizeInEdit")){
+        cypher += " SET p.timesize = " + document.getElementById("timeSizeInEdit").value
     }
     if (document.getElementById("communityInEdit")){
         communityNew = document.getElementById("communityInEdit").value
@@ -289,7 +293,9 @@ async function getSelectedNodeInfo() {
     if (id === "") return
 
     let request = {
-        'cypher': 'MATCH (p {id: ' + id + '}) RETURN p.description, p.sources, p.title, p.size, p.community, p.id LIMIT 1'
+        'cypher': `MATCH (p {id: ` + id + `}) 
+                   RETURN p.description, p.sources, p.title, p.size, p.community, p.timesize, p.id 
+                   LIMIT 1`
     }
 
     let response = await fetch('/driver', {
@@ -311,6 +317,8 @@ async function getSelectedNodeInfo() {
                         record["p.title"] != undefined ? record["p.title"] : ''
                     document.getElementById("sourcesInEdit").value = 
                         record["p.sources"] != undefined ? record["p.sources"] : ''
+                    document.getElementById("timeSizeInEdit").value = 
+                        record["p.timesize"] != undefined ? record["p.timesize"] : ''
                     if (document.getElementById("communityInEdit")) {
                         document.getElementById("communityInEdit").value = 
                             record["p.community"] != undefined ? record["p.community"] : ''
