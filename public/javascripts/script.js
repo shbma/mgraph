@@ -300,7 +300,24 @@ function getAndApplyCanvasState(cookieName='viz'){
     }
 }
 
+/** подстройка высоты textarea под содержимое*/
+function autosize(elem=undefined){
+  let el = elem ? elem : this;
+  setTimeout(function(){
+    el.style.cssText = 'height:auto; padding:0';    
+    el.style.cssText = 'height:' + el.scrollHeight + 'px';
+  },0);
+}
+
 /*=================== Обработка событий ================*/
+
+/** всем textarea - автоподстройка высоты под содрежимое*/
+$(document).ready(function() {
+    document.querySelectorAll('textarea').forEach((area) => {        
+        area.addEventListener('change', autosize);
+    });
+});
+
 
 /** Как только закончится стабилизация графа - включаем режим ручной расстановки вершин*/
 function setStabilizedHandler(){

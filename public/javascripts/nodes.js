@@ -313,12 +313,13 @@ async function getSelectedNodeInfo() {
                 result.map(record => {
                     document.getElementById("desc").value = 
                         record["p.description"] != undefined ? record["p.description"] : ''
+                    autosize(document.getElementById("desc"))  // подстроим высоту поля под конент
                     document.getElementById("title").value = 
                         record["p.title"] != undefined ? record["p.title"] : ''
                     document.getElementById("sourcesInEdit").value = 
                         record["p.sources"] != undefined ? record["p.sources"] : ''
                     document.getElementById("timeSizeInEdit").value = 
-                        record["p.timesize"] != undefined ? record["p.timesize"] : ''
+                        record["p.timesize"] != undefined ? record["p.timesize"] : ''                    
                     if (document.getElementById("communityInEdit")) {
                         document.getElementById("communityInEdit").value = 
                             record["p.community"] != undefined ? record["p.community"] : ''
