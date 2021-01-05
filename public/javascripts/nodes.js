@@ -319,7 +319,7 @@ async function getSelectedNodeInfo() {
                     document.getElementById("sourcesInEdit").value = 
                         record["p.sources"] != undefined ? record["p.sources"] : ''
                     document.getElementById("timeSizeInEdit").value = 
-                        record["p.timesize"] != undefined ? record["p.timesize"] : ''                    
+                        record["p.timesize"] != undefined ? record["p.timesize"] : '0'                    
                     if (document.getElementById("communityInEdit")) {
                         document.getElementById("communityInEdit").value = 
                             record["p.community"] != undefined ? record["p.community"] : ''
@@ -467,8 +467,10 @@ function restoreCoordinates(){
                 let y = record.get('y').low
                 let realID = record.get('nodeID').low                
                 if (x != 0 || y!= 0) {
-                    let visualID = getVisualNodeIdByRealId(realID)                                
-                    viz._network.moveNode(visualID, x, y) 
+                    let visualID = getVisualNodeIdByRealId(realID)
+                    if (visualID != -1) {  // узел найден на холсте
+                        viz._network.moveNode(visualID, x, y) 
+                    }
                 }
             })            
         })
