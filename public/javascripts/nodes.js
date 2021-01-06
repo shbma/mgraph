@@ -1,5 +1,13 @@
+import { selectorsID, deskInterest, deskDefault
+    } from '/javascripts/constants.js'
+import {getDeskName, getActualDeskId, getActualTypoId, deskCondition
+    } from '/javascripts/desks.js'
+import {updateMenu, updateGraph, fillingSelect, getAndApplyCanvasState,
+    clearSelect, autosize
+    } from '/javascripts/common.js'
+
 /** Выдает имя выбранного типа вершины */
-function getTemplateInfo(){
+export function getTemplateInfo(){
     let templatesSelector = document.getElementById("theTypeSelectInAdd")
     let text = templatesSelector.options[templatesSelector.selectedIndex].text
     let value = templatesSelector.options[templatesSelector.selectedIndex].value
@@ -8,15 +16,16 @@ function getTemplateInfo(){
 
 /**
  * Выдает cypher-запрос на добавление новой вершины (типа или его экземпляра)
+ * @param{viz} object - объект холста
  * @param{string} typeOfNode - тип вершины: это класс('type') или экземпляр('instance')
  * @param{string} caption - имя создаваемой вершины
  * @param{number} community - код группы вершин (для класса задать, для экземпляра достанет сам)
  * @param{string} templateName - метка (имя типа), которая присваивается вершине
  */
-function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templateName){
+export function makeCypher4VertexAdd(viz, typeOfNode='instance', caption, community, templateName){
     let cypher ="MATCH (n) WITH max(n.id) AS last_ID " 
     if (typeOfNode == 'instance'){  // достанем с типологии код сообщества
-        let cond = deskCondition('a', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
+        let cond = deskCondition('a', '', '', deskInterest.RELDESK, {}, 'Типология')  
         cypher += `
             CALL {
                 MATCH ` + cond + `WHERE a.id=` + getTemplateInfo().id + 
@@ -24,7 +33,7 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
                } ` 
         community = 'tCommunity'
     }                
-    cypher += "MATCH " + deskCondition('', 'd', '', interest=deskInterest.DESK) 
+    cypher += "MATCH " + deskCondition('', 'd', '', deskInterest.DESK) 
     cypher +=" CREATE (a:" + templateName
               
     cypher += "{"             
@@ -34,13 +43,14 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
     cypher += ' community: ' + community  + ', ' 
     cypher += ' description: "' + document.getElementById("description").value  + '", ' 
     cypher += ' sources: "' + document.getElementById("sourcesInAdd").value  + '", ' 
+    cypher += ' timesize: "' + document.getElementById("timeSizeInAdd").value  + '", ' 
     let sizeVal = document.getElementById("size")
                           .options[document.getElementById("size").selectedIndex]
                           .value
     cypher += ' size:' + sizeVal + '}) '
     let focus = viz._network.getViewPosition()  // в текущий фокус камеры
     let coords = {x: parseInt(focus.x), y: parseInt(focus.y)}    
-    cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
+    cypher += 'CREATE ' + deskCondition('a', 'd', '', deskInterest.RELATION, coords)  // создаем связь до доски                    
     //console.log(cypher)
     return cypher
 }
@@ -49,7 +59,7 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
  * Добавляет вершину выбранного типа в граф 
  * @param{string} тип вершины - это класс('type') или экземпляр('instance')
  */
-function addVertex(typeOfNode='instance') {
+export function addVertex(driver, viz, config, typeOfNode='instance') {
     let caption = document.getElementById("caption").value
     if(caption === "") {
         return 'error: empty caption'
@@ -74,7 +84,7 @@ function addVertex(typeOfNode='instance') {
         community: "community"
     }
 
-    let cypher = makeCypher4VertexAdd(typeOfNode, caption, community, templateName)
+    let cypher = makeCypher4VertexAdd(viz, typeOfNode, caption, community, templateName)
 
     // добавляем в граф вершину с заданным типом, свойствами и привязкой к доске
     var session = driver.session()
@@ -88,16 +98,16 @@ function addVertex(typeOfNode='instance') {
         })
         .then(() => {
             session.close()            
-            updateGraph(false, true)
+            updateGraph(driver, viz, config, false, true)
             updateMenu()
         }) 
 
-    newPropertysLabelCount = 0
+    //newPropertysLabelCount = 0
     document.getElementById("caption").value = ""
 }
 
 /** выдает объект с параметрами вершины*/
-async function getNodeParameters(nodeID){
+export async function getNodeParameters(nodeID){
     let request = { 
             'cypher': ` MATCH (n {id:` + nodeID + `}) 
                         RETURN n.title AS title, n.community AS community`
@@ -117,13 +127,13 @@ async function getNodeParameters(nodeID){
     return result[0]
 }
 
-async function changeNode() {
+export async function changeNode(driver, viz, config) {
     let communityNew = null
     let cypherTypeAddon = ''    
     let nodeID = document.getElementById("nodeSelect").value
     let typeSelector = document.getElementById("theTypeSelectInEdit")
     if (typeSelector) {
-        typeID = typeSelector.value
+        let typeID = typeSelector.value
         // узнаем параметры новой метки
         let typeInfo = await getNodeParameters(typeID)                      
         let labelNew = typeInfo['title']
@@ -143,6 +153,9 @@ async function changeNode() {
         " SET p.size = " + parseFloat(document.getElementById("type").value)
     if (document.getElementById("sourcesInEdit")){
         cypher += " SET p.sources = \"" + document.getElementById("sourcesInEdit").value + "\""
+    }
+    if (document.getElementById("timeSizeInEdit")){
+        cypher += " SET p.timesize = " + document.getElementById("timeSizeInEdit").value
     }
     if (document.getElementById("communityInEdit")){
         communityNew = document.getElementById("communityInEdit").value
@@ -166,12 +179,12 @@ async function changeNode() {
         console.log('Ошибка HTTP in changeNode: ' + response.status)
         return
     }
-    updateGraph()
+    updateGraph(driver, viz, config)
     updateMenu()
     
 } 
 
-function removeNode() {
+export function removeNode(driver, viz, config) {
     var session = driver.session()    
     session
         .run("MATCH (p) WHERE p.id =" + document.getElementById("nodeSelect").value + " DETACH DELETE p")
@@ -182,21 +195,59 @@ function removeNode() {
         })
         .then(() => {            
             session.close()
-            //updateGraph(true)
-            visualID = getVisualNodeIdByRealId(document.getElementById("nodeSelect").value)            
+            //updateGraph(driver, viz, config, true) 
+            let visualID = getVisualNodeIdByRealId(viz, document.getElementById("nodeSelect").value)                        
             viz._network.selectNodes([visualID])  // выделяем на холсте узел
             viz._network.deleteSelected()   // удаляем его из визуализации
             updateMenu()
         })
 }
 
+
+/**
+ * Выбирает одну вершину с данной доски и вставляет ее в списки выбора,
+ * id которых лежат в массиве selectorsID
+ */
+export async function getNodesSimple() {
+    let request = {
+        'cypher': `MATCH (n) WHERE ` + deskCondition('n') + `
+                   WITH head(collect(n)) AS p
+                   RETURN p.id, p.title`
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })
+
+    if (response.ok) {
+        response
+            .json()
+            .then(result => {
+                result.map(record => {
+                    let text = "<" + record['p.id'] + ">:" + record['p.title']
+                    for (let i = 0; i < selectorsID.length; i++)
+                        document.getElementById(selectorsID[i]).add(new Option(text, record['p.id'], false, false))
+                })
+            })
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+    }
+
+}
+
+
 /**
  * Выбирает все вершины с данной доски и заполняет ими списки выбора,
  * id которых лежат в массиве selectorsID
  */
-async function getNodes() {
+export async function getNodes() {
     let request = {
-        'cypher': `MATCH (p) WHERE ` + deskCondition('p') + `
+        'cypher': `MATCH (n) WHERE ` + deskCondition('n') + `
+                   WITH head(collect(p)) AS p
                    RETURN p.id, p.title ORDER BY p.title`
     }
 
@@ -230,8 +281,8 @@ async function getNodes() {
  * @return{objectr} значения свойств типа нужной вершины, 
  *                  например {'typeID':127, 'community':5, 'title': "Знание"}
  */
-async function getNodeTypeInfo(instanceID){
-    let cond_typo = deskCondition('t', 'dt', '', deskInterest.RELDESK, {}, deskType='Типология')  
+export async function getNodeTypeInfo(instanceID){
+    let cond_typo = deskCondition('t', 'dt', '', deskInterest.RELDESK, {}, 'Типология')  
     
     let request = {
         'cypher': ` MATCH (s {id:` + instanceID + `}) 
@@ -266,7 +317,7 @@ async function getNodeTypeInfo(instanceID){
  * @param{string} id элемента со списком выбра на html-странице
  * @param{string} whichID - id элемента, чей тип надо поставить выбранным
  */
-async function fillTypeSelector(selector, whichID=''){
+export async function fillTypeSelector(selector, whichID=''){
     let selEl = document.getElementById(selector)    
     if (selEl){
         let selectedTypeId = null
@@ -274,7 +325,7 @@ async function fillTypeSelector(selector, whichID=''){
             let info = await getNodeTypeInfo(whichID)
             selectedTypeId = info.typeID            
         } 
-        let cond = deskCondition('n', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
+        let cond = deskCondition('n', '', '', deskInterest.RELDESK, {}, 'Типология')  
         fillingSelect(selector, 
                     'MATCH ' + cond + ' RETURN DISTINCT n.title, n.id', 
                     'n.title', 'n.id', selectedTypeId)
@@ -284,12 +335,14 @@ async function fillTypeSelector(selector, whichID=''){
 /**
  * Запрашивает информацию с выбранного узла и заполняет по ней форму редактирования
  */
-async function getSelectedNodeInfo() {
-    let id = document.getElementById("nodeSelect").value
+export async function getSelectedNodeInfo(realId="") {
+    let id = realId != "" ? realId : document.getElementById("nodeSelect").value
     if (id === "") return
 
     let request = {
-        'cypher': 'MATCH (p {id: ' + id + '}) RETURN p.description, p.sources, p.title, p.size, p.community, p.id LIMIT 1'
+        'cypher': `MATCH (p {id: ` + id + `}) 
+                   RETURN p.description, p.sources, p.title, p.size, p.community, p.timesize, p.id 
+                   LIMIT 1`
     }
 
     let response = await fetch('/driver', {
@@ -307,10 +360,13 @@ async function getSelectedNodeInfo() {
                 result.map(record => {
                     document.getElementById("desc").value = 
                         record["p.description"] != undefined ? record["p.description"] : ''
+                    autosize(document.getElementById("desc"))  // подстроим высоту поля под конент
                     document.getElementById("title").value = 
                         record["p.title"] != undefined ? record["p.title"] : ''
                     document.getElementById("sourcesInEdit").value = 
                         record["p.sources"] != undefined ? record["p.sources"] : ''
+                    document.getElementById("timeSizeInEdit").value = 
+                        record["p.timesize"] != undefined ? record["p.timesize"] : '0'                    
                     if (document.getElementById("communityInEdit")) {
                         document.getElementById("communityInEdit").value = 
                             record["p.community"] != undefined ? record["p.community"] : ''
@@ -340,10 +396,10 @@ async function getSelectedNodeInfo() {
  * @param {number} ID вершины на холсте
  * @return {object} объект со свойствами ключ-значение, например {'id':'5', 'use':'IT'}
  */
-function getVisualNodeProperties(visualId){
+export function getVisualNodeProperties(viz, visualId){
     let props = {}
     // извлечем свойства из поля title вершины (должен быть способ лучше)
-    nodePropertiesString = viz._nodes[visualId].title    
+    let nodePropertiesString = viz._nodes[visualId].title    
     nodePropertiesString.split('<br>').forEach((line, i, arr) => {
         let keyVal = line.replace('<strong>','').replace('</strong>','').split(':')        
         if (keyVal[0].length > 0) {
@@ -358,12 +414,12 @@ function getVisualNodeProperties(visualId){
  * @param {number} ID вершины в БД
  * @return {number} ID этой же вершины на холсте
  */
-function getVisualNodeIdByRealId(realID){
-   visualIdList = Object.keys(viz._nodes)
-   nodes_quantity = visualIdList.length
-    for (i=0; i<nodes_quantity; i++){        
-        visualId = visualIdList[i]
-        let properties = getVisualNodeProperties(viz._nodes[visualId].id)
+export function getVisualNodeIdByRealId(viz, realID){
+    let visualIdList = Object.keys(viz._nodes)
+    let nodes_quantity = visualIdList.length
+    for (let i=0; i<nodes_quantity; i++){        
+        let visualId = visualIdList[i]
+        let properties = getVisualNodeProperties(viz, viz._nodes[visualId].id)
         
         if (parseInt(properties.id) == parseInt(realID)){
             return visualId
@@ -375,7 +431,7 @@ function getVisualNodeIdByRealId(realID){
 /**
  * Сохраняет координаты вершин с холстав в БД
  */
-function saveCoordinates(){        
+export function saveCoordinates(driver, viz){        
     let pos = viz._network.getPositions()  // считаем все координаты всех вершин 
     // в виде в pos={{0:{x:-10, y:15}, {0:{x:154, y:165}, ... }
 
@@ -384,7 +440,7 @@ function saveCoordinates(){
     let cypherMatchRelations = ' MATCH '
     let cypherSET = ' SET '
     Object.keys(pos).forEach(visualId => {        
-        id = parseInt(getVisualNodeProperties(visualId).id)
+        id = parseInt(getVisualNodeProperties(viz, visualId).id)
         nodeName = 'id' + id
         relName = 'r' + id 
         cypherMatchNodes += '(' + nodeName +' {id: ' + id + '}), '
@@ -409,11 +465,45 @@ function saveCoordinates(){
         .then(() => session.close())
 }
 
+/**
+ * Сохраняет координаты кокретной вершины с холста в БД
+ * @param{number} visualID - фронтендный id вершины
+ */
+export function saveSingleNodeCoordinates(driver, viz, visualId){        
+    let pos = viz._network.getPositions(visualId)  // считаем все координаты всех вершин 
+    // в виде в pos={458: {x:-10, y:15} } - пример для visualID = 458
+
+    // соберем все в один запрос
+    let cypherMatchNodes = ' MATCH '
+    let cypherMatchRelations = ' MATCH '
+    let cypherSET = ' SET '
+    
+    let id = parseInt(getVisualNodeProperties(viz, visualId).id)
+    let nodeName = 'id' + id
+    let relName = 'r' + id 
+    cypherMatchNodes += '(' + nodeName +' {id: ' + id + '}) '
+    cypherMatchRelations += deskCondition(nodeName, 'd', relName, deskInterest.RELDESK) + ' '
+    cypherSET += relName + '.x=' + pos[visualId].x + ', ' 
+    cypherSET += relName + '.y=' + pos[visualId].y + ' ' 
+    
+    let cypher = cypherMatchNodes + cypherMatchRelations + cypherSET 
+
+    //и отправим на сервер
+    var session = driver.session()    
+    session
+        .run(cypher)
+        .then(result => {})
+        .catch(error => {
+            console.log(error)
+        })
+        .then(() => session.close())
+}
+
 /** 
  * Расставляет вершины по сохраненным ранее в базе координатам
  * и возвращает холст на прежние координаты и масштаб
  */
-function restoreCoordinates(){
+export function restoreCoordinates(driver, viz){
     var session = driver.session()    
     let cypher = 'MATCH ' + deskCondition('a', 'd', 'r') + ' RETURN a.id AS nodeID, r.x AS x, r.y AS y'    
     session
@@ -424,8 +514,10 @@ function restoreCoordinates(){
                 let y = record.get('y').low
                 let realID = record.get('nodeID').low                
                 if (x != 0 || y!= 0) {
-                    let visualID = getVisualNodeIdByRealId(realID)                                
-                    viz._network.moveNode(visualID, x, y) 
+                    let visualID = getVisualNodeIdByRealId(viz, realID)
+                    if (visualID != -1) {  // узел найден на холсте
+                        viz._network.moveNode(visualID, x, y) 
+                    }
                 }
             })            
         })
@@ -434,37 +526,38 @@ function restoreCoordinates(){
         })
         .then(() => {
             session.close()
-            getAndApplyCanvasState()  // подвинем холст в сохраненное состояние               
+            getAndApplyCanvasState(viz)  // подвинем холст в сохраненное состояние               
         })    
 }
 
 /** ставит камеру на узел, чей ID из базы данных передан в фунцию*/
-function focusOnNode(realID){
-    let visualID = getVisualNodeIdByRealId(realID)    
+export function focusOnNode(viz, realID){
+    let visualID = getVisualNodeIdByRealId(viz, realID)    
     viz._network.focus(visualID)
 }
 
 /*=================== Обработка событий ================*/
 
 /**
- * Привязывает обработчик к событию выбора вершины
+ * Привязывает обработчик к событию выбора второй вершины
  * (чтобы выбрать несколько нужен длинный click или Ctrl+click по каждой следующей).
  * Вторая выбранная вершиная ставится выбранной во втором select форме создания связи
  */
-function setNodeSelectHandler(){    
-    viz._network.on('selectNode', (param) => {  
+export function setNodeSelectHandler(viz){        
+    viz._network.on('selectNode', (param) => {        
         if (param.nodes.length <= 1) {  // т.е. если выделено меньше 2х вершин - не интересно
             return
         }
         let currentNodeId = viz._network.getNodeAt(param.pointer.DOM); // вершина под событием
-        let properties = getVisualNodeProperties(currentNodeId)
-        realID = parseInt(properties.id)
+        let properties = getVisualNodeProperties(viz, currentNodeId)
+        let realID = parseInt(properties.id)        
 
         // ставим выбранной нужную вершину и симулируем клик по select-ам        
         if (realID != NaN) { 
-            // форма создания ребра - во второй select    
-            document.getElementById('relationshipEnd').value = realID
-            document.getElementById('relationshipEnd').dispatchEvent(new MouseEvent('change'))             
+            // форма создания ребра - во второй select  
+            clearSelect('relationshipEnd')
+            document.getElementById('relationshipEnd').add(new Option(properties.title, realID, false, true))                
+            document.getElementById('relationshipEnd').dispatchEvent(new MouseEvent('change'))            
         }        
     })
 }
@@ -473,25 +566,45 @@ function setNodeSelectHandler(){
  * Привязывает обработчик к клику по вершине.
  * Кликнутая вершина ставится выбранной в формах c select-ами по вершинам
  */
-function setNodeClickHandler(){    
+export function setNodeClickHandler(viz){        
     viz._network.on('click', (param) => {  // по клику на холст
         if (param.nodes.length == 0) {
             return
         }
+        let nodeIdAtCanvas = NaN
+        let realID = NaN
         if (viz._network.getSelectedNodes().length == 1){  
             nodeIdAtCanvas = param.nodes[0]  // ID вершины на холсте, не совпадает с ID в БД        
-            let properties = getVisualNodeProperties(nodeIdAtCanvas)
+            let properties = getVisualNodeProperties(viz, nodeIdAtCanvas)
             realID = parseInt(properties.id)
             if (realID != NaN) {
-                // ставим выбранной нужную вершину и симулируем клик по select-ам
-                document.getElementById('nodeSelect').value = realID
+                clearSelect('nodeSelect')
+                // добавим в список выбранную вершину и программно кликнем по ней
+                document.getElementById('nodeSelect').add(new Option(properties.title, realID, false, true))                
                 document.getElementById('nodeSelect').dispatchEvent(new MouseEvent('change'))
 
-                document.getElementById('relationshipStart').value = realID
+                clearSelect('relationshipStart')
+                // добавим в список выбранную вершину и программно кликнем по ней
+                document.getElementById('relationshipStart').add(new Option(properties.title, realID, false, true))                                
                 document.getElementById('relationshipStart').dispatchEvent(new MouseEvent('change'))
-
             }
         }
         
+    })
+}
+
+/**
+ * Привязывает обработчик к окончанию перетаскивания вершин(ы).
+ * По событию - сохраняются в БД текущие координаты перемешенной вершин(ы)
+ */
+export function setNodeDragHandler(driver, viz){
+    viz._network.on('dragEnd', (event) => {        
+        let nodes = event.nodes    
+        if (nodes.length == 0) {
+            return
+        }
+        nodes.forEach((nodeID) => {
+            saveSingleNodeCoordinates(driver, viz, nodeID)
+        })    
     })
 }

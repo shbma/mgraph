@@ -1,16 +1,21 @@
+import {selectorsID, vizIDa} from '/javascripts/constants.js'
+import {getDeskName, getActualDeskId, getActualTypoId, deskCondition
+    } from '/javascripts/desks.js'
+import {updateMenu, updateGraph, fillingSelect, templateChanged} from '/javascripts/common.js'
+import {fillTypeSelector} from '/javascripts/nodes.js'
 
-async function getGraphInfo() {    
-    desk = getDeskName()
-    getLoginInfo()
-    neo4jLogin()
-    updateMenu()
-    draw() 
-    await start()
-    updateGraph(false, true)
+export async function getGraphInfo(driver, viz, vizID='viz', config) {        
+    driver = await neo4jLogin()
+    await updateMenu(selectorsID)
+    let vision = draw(vizIDa) 
+    config = vision['config']
+    viz = vision['viz']    
+    await start(driver, config)
+    updateGraph(driver, viz, config, false, true)
 }
 
 /** выдает тексты стартового cypher-запроса */
-function initialCypher(){
+export function initialCypher(){
     let desk = getDeskName()        
     //connected_nodes выдаст только связанные между собой узлы, одиночные - нет
     return {
@@ -21,7 +26,7 @@ function initialCypher(){
         }
 }
 
-async function start() {
+export async function start(driver, config) {
     let labelEl = document.getElementById("Label")       
     if (labelEl) {
         labelEl.add(new Option("Новый тип"))
@@ -38,16 +43,17 @@ async function start() {
         let selectTyDeskId = getActualTypoId()
         await fillingSelect("typoSelect", 'MATCH (n:Доска {type:"Типология"}) RETURN n.title AS desks, n.id AS ids', "desks", "ids", selectTyDeskId)    
     }
-    updateConfigLabels()  
-    updateConfigRelationships()
+    updateConfigLabels(driver, config)  
+    updateConfigRelationships(driver, config)
 }
 
-function draw() {    
-    config = {
-        container_id: "viz",
-        server_url: serverUrl,
-        server_user: username,
-        server_password: password,
+export function draw(vizID='viz') {  
+    let login = getLoginInfo()  
+    let config = {
+        container_id: vizID,
+        server_url: login.serverUrl,
+        server_user: login.username,
+        server_password: login.password,
         labels: {  // не влияет на ситуацию - config.labels перезаписывается в других местах 
             "Node": {
                 caption: "title",
@@ -66,13 +72,13 @@ function draw() {
         initial_cypher: initialCypher().connected_nodes
     }
 
-    viz = new NeoVis.default(config)
-    console.log(viz)
-    viz.render()
+    let vizObject = new NeoVis.default(config)
+    vizObject.render()
+    return {'config': config, 'viz': vizObject}
 }
 
 /** Пересоздает конфигурационные массивы с параметрами отображения для узлов. */
-function updateConfigLabels() {   
+export function updateConfigLabels(driver, config) {   
     let cypherNodes = 'MATCH (a) WHERE ' + deskCondition('a') + ' RETURN DISTINCT labels(a) AS label'
             
     let session = driver.session()
@@ -103,7 +109,7 @@ function updateConfigLabels() {
 }
 
 /** Пересоздает конфигурационные массивы с параметрами отображения для связей. */
-function updateConfigRelationships() {
+export function updateConfigRelationships(driver, config) {
     let cypherRelations = 'MATCH (a)-[r]-(b) WHERE ' 
                     + deskCondition('a') + ' AND '
                     + deskCondition('b') + ' RETURN DISTINCT type(r) AS relType'    
@@ -128,22 +134,27 @@ function updateConfigRelationships() {
         })
 }
 
-async function neo4jLogin() {
-    driver = neo4j.driver(serverUrl, neo4j.auth.basic(username, password), {encrypted: 'ENCRYPTION_OFF'})
+export async function neo4jLogin() {
+    let login = getLoginInfo()
+    let driver = neo4j.driver(login.serverUrl, neo4j.auth.basic(login.username, login.password), 
+        {encrypted: 'ENCRYPTION_OFF'})
     driver.onError = error => {
         console.log(error)
     }
 
     try {
         await driver.verifyConnectivity()
+        return driver        
     } catch (error) {
         alert("Ошибка аутентификации")
     }
 }
 
-function getLoginInfo() {
+export function getLoginInfo() {
     const menu = document.forms.graphMenu
-    serverUrl = document.getElementById("url").value
-    username = menu.elements.username.value
-    password = menu.elements.password.value    
+    return {
+        'serverUrl': document.getElementById("url").value,
+        'username': menu.elements.username.value,
+        'password': menu.elements.password.value
+    }
 }

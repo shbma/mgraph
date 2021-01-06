@@ -13,13 +13,14 @@
         <option value="ДОСТАВЛЯЕТ">Доставляет</option>
         <option value="ПРОВЕРЯЕТ">Проверяет</option>
         <option value="СООТВЕТСТВУЕТ">Соответствует</option>
-        <option value="ЯВЛЯЕТСЯ_ПРЕДКОМ">Является предком</option>
+        <option value="ОБОБЩАЕТ">Обобщает</option>
+        <option value="ВИЗУАЛИЗИРУЕТ">Визуализирует</option>
 	</select><br>
 
     <label for="relationshipEnd">Конечная вершина:</label><br>
     <select id="relationshipEnd" name="relationshipEnd">
     </select><br><br>
 
-    <br><button type="button" onclick="addRelationship()">Добавить</button><br>
-    <br><button type="button" onclick="removeRelationship()">Удалить</button><br>
+    <br><button id="addRelationshipTrigger" type="button">Добавить</button><br>
+    <br><button id="deleteRelationshipTrigger" type="button">Удалить</button><br>
 </fieldset>

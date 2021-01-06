@@ -1,5 +1,8 @@
+import {deskInterest} from '/javascripts/constants.js'
+import {stringify} from '/javascripts/common.js'
+
 /** Выдает имя текущей выбранной в интерфейсе доски  */
-function getDeskName(){
+export function getDeskName(){
     let deskTitle = document.getElementById("deskSelect").getAttribute('actual-title')
     if (deskTitle != '') {  // этот атрибут заполняется с бэкенда
         return deskTitle
@@ -17,7 +20,7 @@ function getDeskName(){
  * @param{object} relProperties - дополнительные свойства ребра (если ориентируемся на ребро)
  * @param{string} deskType - тип доски ('Предметная', 'Типология' и пр)
  */
-function deskCondition(node='a', desk='', relation='', interest=deskInterest.RELDESK, relProperties={}, deskType=''){    
+export function deskCondition(node='a', desk='', relation='', interest=deskInterest.RELDESK, relProperties={}, deskType=''){    
     let deskID = 0;
     switch (deskType) {        
         case 'Типология':
@@ -41,17 +44,17 @@ function deskCondition(node='a', desk='', relation='', interest=deskInterest.REL
 }
 
 /** обработчик события смены доски */
-function deskChange(){          
+export function deskChange(){          
     //updateGraph(true, true)
     window.location.href = '/desk/' + $('#deskSelect').val()
 }
 
 /** выдает id доски, который нужно показать или выставить активной в select*/
-function getActualDeskId() {
+export function getActualDeskId() {
     return parseInt(document.getElementById("deskSelect").getAttribute('actual-id'))
 }
 
 /** выдает id доски с типологией, которую нужно показать или выставить активной в select*/
-function getActualTypoId() {
+export function getActualTypoId() {
     return parseInt(document.getElementById("typoSelect").getAttribute('actual-id'))
 }

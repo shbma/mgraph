@@ -2,25 +2,20 @@
  *  https://visjs.github.io/vis-network/docs/network/ -- док. по работе на холсте с графом
  */
 
-let viz
-let driver
-let username, password
-let updateHandler
-let selectorsID = ["relationshipEnd", "relationshipStart",
+export let selectorsID = ["relationshipEnd", "relationshipStart",
     "nodeSelect", "oneWayFilterSelector", "depthFilterSelector"]
-let topicsID = [] //["newTopic", "topic"] // аккуратно удалить в будущем (есть  в коде updateMenu)
-let serverUrl = "neo4j://176.57.217.75:7687"
+export let vizIDa = 'viz'
+export let topicsID = [] //["newTopic", "topic"] // аккуратно удалить в будущем (есть  в коде updateMenu)
+export let serverUrl = "neo4j://176.57.217.75:7687"
 // будет хранить в реляционной БД
-let communities = []
-let newPropertysLabelCount = 0
-let newPropertysTypeCount = 0
-let config
-let desk = ""
-let deskDefault = "Basic"
-let firstNodeID = -1
-let secondNodeID = -1
-let vizualHandlersApplyed = false
-const deskInterest = {
+export let communities = []
+export let newPropertysLabelCount = 0
+export let newPropertysTypeCount = 0
+export let deskDefault = "Basic"
+export let firstNodeID = -1
+export let secondNodeID = -1
+export let vizualHandlersApplyed = false
+export const deskInterest = {
     RELATION: 0,
     DESK: 1,
     RELDESK : 2

@@ -1,21 +1,24 @@
 <fieldset name="vertex" id="vertex">
     <legend align="left">Изменить/удалить вершину</legend>
     <label for="nodeSelect">Вершина:</label><br>
-    <select id="nodeSelect" name="nodeSelect" onchange="getSelectedNodeInfo()">
+    <select id="nodeSelect" name="nodeSelect" >
     </select><br>
 
     <label for="title">Название:</label><br>
     <input type="text" id="title" name="title"><br>
+
+    <label>Тип:</label><br>    
+    <select id="theTypeSelectInEdit" name="theTypeSelectInEdit"> 
+    </select><br>
 
     <label for="desc">Описание:</label><br>
     <textarea id="desc" name="desc"></textarea><br>
 
     <label>Источники:</label><br>
     <textarea type="text" id="sourcesInEdit"></textarea><br>
-
-    <label>Тип:</label><br>    
-    <select id="theTypeSelectInEdit" name="theTypeSelectInEdit"> 
-    </select><br>
+    
+    <label>Время освоения(минут):</label><br>    
+    <input type="text" id="timeSizeInEdit" value=0><br>
 
     <label for="type">Размер:</label><br>
     <select id="type" name="type">
@@ -24,6 +27,6 @@
         <option value="30">Большой</option>
     </select><br>
 
-    <br><button type="button" onclick="changeNode()">Изменить выбранную вершину</button><br>
-    <br><button type="button" onclick="removeNode()">Удалить выбранную вершину </button><br>
+    <br><button id="changeNodeTrigger" type="button" >Изменить выбранную вершину</button><br>
+    <br><button id="deleteNodeTrigger" type="button" >Удалить выбранную вершину </button><br>
 </fieldset>

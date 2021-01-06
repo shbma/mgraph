@@ -1,10 +1,4 @@
-import {
-    updateGraph, replacementSpaces, readPropertys, updateMenu, templateChanged
-    } from '/javascripts/common.js'
-
-
-
-export function addRelations(driver, viz, config) {
+function addRelations() {
     if(firstNodeID < 0 || secondNodeID < 0) {
         alert(firstNodeID + "," + secondNodeID)
         return
@@ -34,14 +28,14 @@ export function addRelations(driver, viz, config) {
         })
         .then(() => {
             session.close()
-            updateGraph(driver, viz, config)
+            updateGraph()
             updateMenu()
         })
     newPropertysTypeCount = 0
     templateChanged(isFirstLevel, "Type")
 }
 
-export function addRelationship(driver, viz, config) {
+function addRelationship() {
     let startNodeId = document.getElementById("relationshipStart").value
     let endNodeId = document.getElementById("relationshipEnd").value
     let relationshipType = document.getElementById("relationshipType").value
@@ -55,12 +49,12 @@ export function addRelationship(driver, viz, config) {
         })
         .then(() => {
             session.close()
-            updateGraph(driver, viz, config)
+            updateGraph()
         })
 
 }
 
-export function removeRelationship(driver, viz, config) {
+function removeRelationship() {
     let startNodeId = document.getElementById("relationshipStart").value
     let endNodeId = document.getElementById("relationshipEnd").value
     var session = driver.session()
@@ -73,6 +67,6 @@ export function removeRelationship(driver, viz, config) {
         })
         .then(() => {
             session.close()
-            updateGraph(driver, viz, config, true)
+            updateGraph(true)
         })
 }

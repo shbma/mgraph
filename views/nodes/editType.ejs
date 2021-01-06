@@ -1,7 +1,7 @@
 <fieldset name="vertex" id="vertex">
     <legend align="left">Изменить/удалить Класс</legend>
     <label for="nodeSelect">Класс</label><br>
-    <select id="nodeSelect" name="nodeSelect" onchange="getSelectedNodeInfo()">
+    <select id="nodeSelect" name="nodeSelect">
     </select><br>
 
     <label for="title">Название:</label><br>
@@ -16,6 +16,9 @@
     <label for="community">Номер группы:</label><br>
     <input type="text" id="communityInEdit" name="community"><br>
 
+    <label>Время освоения(минут):</label><br>    
+    <input type="text" id="timeSizeInEdit" value=0><br>
+
     <label for="type">Размер:</label><br>
     <select id="type" name="type">
         <option value="20">Обычный</option>
@@ -23,6 +26,6 @@
         <option value="30">Большой</option>
     </select><br>
 
-    <br><button type="button" onclick="changeNode()">Изменить выбранную вершину</button><br>
-    <br><button type="button" onclick="removeNode()">Удалить выбранную вершину </button><br>
+    <br><button id="changeTypeTrigger" type="button" onclick="changeNode()">Изменить выбранную вершину</button><br>
+    <br><button id="deleteTypeTrigger" type="button" onclick="removeNode()">Удалить выбранную вершину </button><br>
 </fieldset>
