@@ -54,4 +54,9 @@ function addPathP2Pfilter(refresh=true){
         RETURN p`
     console.log(cypher)
     viz.renderWithCypher(cypher)   
+        if (refresh == true){
+        viz.renderWithCypher(cypher)            
+    } else {
+        viz.updateWithCypher(cypher)
+    }
 }
