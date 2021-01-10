@@ -36,7 +36,10 @@
 .graphMenu>*>* {
     width: 100%;
 }
-
+#verb select{
+    width: 85%;
+    margin-bottom: 6px;
+}
 .graphMenu>*>textarea {
     width: 99%;
     resize: vertical;    
@@ -52,7 +55,9 @@
 .graphMenu fieldset {
     width: 85%;
 }
-
+#sidebar fieldset button {
+    margin: 5px 0 5px 0
+}
 .graphMenu #addNodeByTemplate {
     margin-bottom: 24px; 
 }

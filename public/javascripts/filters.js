@@ -43,3 +43,15 @@ function addDepthFilter(refresh=true) {
         viz.updateWithCypher(cypher)
     }
 }
+
+function addPathP2Pfilter(refresh=true){
+    let idA = 710  //document.getElementById("pathP2PfilterSelectorA").value    
+    let idB = 736  //document.getElementById("pathP2PfilterSelectorB").value 
+    let cypher = `
+        MATCH (a {id: ` + idA + `}), (b {id: ` + idB + `}), 
+               p = allShortestPaths((a)-[:subsection*]->(b)) 
+        WHERE ` + deskCondition('a') + ` AND ` + deskCondition('b') + `
+        RETURN p`
+    console.log(cypher)
+    viz.renderWithCypher(cypher)   
+}

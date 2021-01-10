@@ -1,11 +1,11 @@
 <fieldset name="verb" id="verb">
 	<legend align="left">Ребра</legend>
 
-	<label for="relationshipStart">Начальная вершина:</label><br>
+	От:
 	<select id="relationshipStart" name="relationshipStart">
 	</select><br>
 
-	<label for="relationshipType">Тип ребра (если удаляете, то не важно):</label><br>
+	Тип
 	<select id="relationshipType" name="relationshipType">
 	    <option value="ИСПОЛЬЗУЕТ">Использует</option>
         <option value="СОДЕРЖИТ">Содержит</option>
@@ -17,10 +17,10 @@
         <option value="ВИЗУАЛИЗИРУЕТ">Визуализирует</option>
 	</select><br>
 
-    <label for="relationshipEnd">Конечная вершина:</label><br>
+    До:
     <select id="relationshipEnd" name="relationshipEnd">
-    </select><br><br>
+    </select><br>
 
-    <br><button type="button" onclick="addRelationship()">Добавить</button><br>
-    <br><button type="button" onclick="removeRelationship()">Удалить</button><br>
+    <button type="button" onclick="addRelationship()">Добавить</button><br>
+    <button type="button" onclick="removeRelationship()">Удалить</button><br>
 </fieldset>
