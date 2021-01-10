@@ -301,20 +301,21 @@ function getAndApplyCanvasState(cookieName='viz'){
 }
 
 /** подстройка высоты textarea под содержимое*/
-function autosize(elem=undefined){
-  let el = elem ? elem : this;
-  setTimeout(function(){
-    el.style.cssText = 'height:auto; padding:0';    
+function autosize(el){ 
+  setTimeout(function(){    
+    el.style.cssText = 'height:auto; padding:0';     
     el.style.cssText = 'height:' + el.scrollHeight + 'px';
   },0);
 }
 
 /*=================== Обработка событий ================*/
 
-/** всем textarea - автоподстройка высоты под содрежимое*/
 $(document).ready(function() {
+    //всем textarea - автоподстройка высоты под содрежимое
     document.querySelectorAll('textarea').forEach((area) => {        
-        area.addEventListener('change', autosize);
+        area.addEventListener('input', (event)=>{
+            autosize(event.target)
+        });
     });
 });
 
