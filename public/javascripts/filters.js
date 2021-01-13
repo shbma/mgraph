@@ -45,18 +45,37 @@ function addDepthFilter(refresh=true) {
 }
 
 function addPathP2Pfilter(refresh=true){
-    let idA = 710  //document.getElementById("pathP2PfilterSelectorA").value    
-    let idB = 736  //document.getElementById("pathP2PfilterSelectorB").value 
+    let idA = document.getElementById("pathP2PfilterSelectorA").value    
+    let idB = document.getElementById("pathP2PfilterSelectorB").value 
     let cypher = `
         MATCH (a {id: ` + idA + `}), (b {id: ` + idB + `}), 
                p = allShortestPaths((a)-[:subsection*]->(b)) 
         WHERE ` + deskCondition('a') + ` AND ` + deskCondition('b') + `
         RETURN p`
     console.log(cypher)
-    viz.renderWithCypher(cypher)   
-        if (refresh == true){
-        viz.renderWithCypher(cypher)            
-    } else {
-        viz.updateWithCypher(cypher)
-    }
+    
+    // запросим кратчайший маршрут между вершинами
+    var session = driver.session()
+    session
+        .run(cypher)
+        .then((result) => {
+            if (result.records.length == 0) {
+                alert('Путь не найден')
+            } else {
+                // обновим или дополним граф на холсте
+                if (refresh == true){
+                    viz.renderWithCypher(cypher)            
+                } else {
+                    viz.updateWithCypher(cypher)
+                }                
+            }
+        })
+        .catch(error => {
+            console.log(error)            
+            alert("Ошибка в запросе поиска кратчайшего пути. Возможно, опечатка\n\n"+cypher)
+        })
+        .then(() => {
+            session.close()                        
+        }) 
+    
 }

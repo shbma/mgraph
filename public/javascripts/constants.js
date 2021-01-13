@@ -7,7 +7,8 @@ let driver
 let username, password
 let updateHandler
 let selectorsID = ["relationshipEnd", "relationshipStart",
-    "nodeSelect", "oneWayFilterSelector", "depthFilterSelector"]
+    "nodeSelect", "oneWayFilterSelector", "depthFilterSelector", 
+    "pathP2PfilterSelectorA", "pathP2PfilterSelectorB"]
 let topicsID = [] //["newTopic", "topic"] // аккуратно удалить в будущем (есть  в коде updateMenu)
 let serverUrl = "neo4j://176.57.217.75:7687"
 // будет хранить в реляционной БД

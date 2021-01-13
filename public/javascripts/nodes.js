@@ -510,6 +510,9 @@ function setNodeSelectHandler(){
             // форма создания ребра - во второй select    
             document.getElementById('relationshipEnd').value = realID
             document.getElementById('relationshipEnd').dispatchEvent(new MouseEvent('change'))             
+            // форма Кратчайший путь от A к B - во второй select    
+            document.getElementById('pathP2PfilterSelectorB').value = realID
+            document.getElementById('pathP2PfilterSelectorB').dispatchEvent(new MouseEvent('change'))             
         }        
     })
 }
@@ -531,9 +534,12 @@ function setNodeClickHandler(){
                 // ставим выбранной нужную вершину и симулируем клик по select-ам
                 document.getElementById('nodeSelect').value = realID
                 document.getElementById('nodeSelect').dispatchEvent(new MouseEvent('change'))
-
+                // форма создания ребра - в первый select    
                 document.getElementById('relationshipStart').value = realID
                 document.getElementById('relationshipStart').dispatchEvent(new MouseEvent('change'))
+                // форма Кратчайший путь от A к B - в первый select    
+                document.getElementById('pathP2PfilterSelectorA').value = realID
+                document.getElementById('pathP2PfilterSelectorA').dispatchEvent(new MouseEvent('change'))
 
             }
         }
