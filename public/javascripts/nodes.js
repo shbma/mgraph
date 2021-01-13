@@ -368,17 +368,12 @@ function getVisualNodeProperties(visualId){
  * @return {number} ID этой же вершины на холсте
  */
 function getVisualNodeIdByRealId(realID){
-   visualIdList = Object.keys(viz._nodes)
-   nodes_quantity = visualIdList.length
-    for (i=0; i<nodes_quantity; i++){        
-        visualId = visualIdList[i]
-        let properties = getVisualNodeProperties(viz._nodes[visualId].id)
-        
-        if (parseInt(properties.id) == parseInt(realID)){
-            return visualId
-        }
+    let visualId = idVisualRealMap.byReal[realID]
+    if (visualId != undefined) {
+        return visualId
+    } else {
+        return -1
     }
-    return -1
 }
 
 /**
@@ -540,7 +535,12 @@ function setNodeClickHandler(){
                 // форма Кратчайший путь от A к B - в первый select    
                 document.getElementById('pathP2PfilterSelectorA').value = realID
                 document.getElementById('pathP2PfilterSelectorA').dispatchEvent(new MouseEvent('change'))
-
+                // фильтр по глубине
+                document.getElementById('depthFilterSelector').value = realID
+                document.getElementById('depthFilterSelector').dispatchEvent(new MouseEvent('change'))
+                // фильтр по разделу
+                document.getElementById('oneWayFilterSelector').value = realID
+                document.getElementById('oneWayFilterSelector').dispatchEvent(new MouseEvent('change'))
             }
         }
         

@@ -9,15 +9,21 @@ async function getGraphInfo() {
     updateGraph(false, true)
 }
 
-/** выдает тексты стартового cypher-запроса */
+/** 
+ * Выдает тексты стартового cypher-запроса 
+ * connected_nodes выдаст только связанные между собой узлы, одиночные - нет
+ * nodes выдает все узлы без связей между ними
+ * nodes_ids выдает id(node), node.id, node - для удобства работы с графом на холсте
+ */
 function initialCypher(){
     let desk = getDeskName()        
-    //connected_nodes выдаст только связанные между собой узлы, одиночные - нет
     return {
         'connected_nodes': 'MATCH (a)-[r]-(b) WHERE ' 
                     + deskCondition('a') + ' AND '
                     + deskCondition('b') + ' RETURN a, r',
-        'nodes': 'MATCH (a) WHERE ' + deskCondition('a') + ' RETURN a'
+        'nodes': 'MATCH (a) WHERE ' + deskCondition('a') + ' RETURN a',
+        'nodes_ids': 'MATCH (a) WHERE ' + deskCondition('a') + 
+                    ' RETURN id(a) AS visualID, a.id AS realID, a AS node'
         }
 }
 

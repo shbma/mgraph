@@ -26,3 +26,9 @@ const deskInterest = {
     DESK: 1,
     RELDESK : 2
 }
+let idVisualRealMap = {
+        'byVisual': {},
+        'byReal': {},
+        getByVisual: (vid) => { return this.byVisual[vid]},
+        getByReal: (rid) => { return this.byReal[rid]}
+    }

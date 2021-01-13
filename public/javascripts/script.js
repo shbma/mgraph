@@ -1,3 +1,31 @@
+/** 
+ * Пишет в глобальную переменную idVisualRealMap словари visualId-realId
+ * и realId-visualId - соответствия id на холсте и в БД
+ */
+function getVisual2RealIDCorrespondence(){    
+    // сброс прежней инфы
+    idVisualRealMap.byVisual = {}
+    idVisualRealMap.byReal = {}
+    
+    let session = driver.session()
+    session
+        .run(initialCypher().nodes_ids)
+        .then(result => {                        
+            result.records.forEach(record => {                 
+                let visualID = record.get('visualID').low                                    
+                let realID = record.get('realID').low
+                // записываем два перевернутых словаря
+                idVisualRealMap.byVisual[visualID] = realID         
+                idVisualRealMap.byReal[realID] = visualID                
+            })             
+        })
+        .catch(error => {
+            console.log(error)
+        })
+        .then(() => {
+            session.close()
+        })
+}
 
 function updateGraph(reloadNeeded=false, renderNeeded=false) {
     desk = getDeskName()    
@@ -19,6 +47,7 @@ function updateGraph(reloadNeeded=false, renderNeeded=false) {
                 viz.updateWithCypher(initialCypher().connected_nodes)
                 viz.updateWithCypher(initialCypher().nodes)
             }
+            getVisual2RealIDCorrespondence()            
         })
         .catch(error => {
             console.log(error)

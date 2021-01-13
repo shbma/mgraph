@@ -44,6 +44,9 @@ function addDepthFilter(refresh=true) {
     }
 }
 
+/**
+ * Показыват кратчайший маршрут от одной вершины до другой, A->B
+ */
 function addPathP2Pfilter(refresh=true){
     let idA = document.getElementById("pathP2PfilterSelectorA").value    
     let idB = document.getElementById("pathP2PfilterSelectorB").value 
