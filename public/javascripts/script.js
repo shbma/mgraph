@@ -107,8 +107,11 @@ async function fillingSelect(select, cypherCode, captionOfResult, valueOfResult=
 }
 
 function clearSelect(selectID) {        
-    for (let i = document.getElementById(selectID).options.length - 1; i >= 0; i--)
-        document.getElementById(selectID).options[i] = null
+    let selector = document.getElementById(selectID)
+    if (selector != undefined) {
+        for (let i = selector.options.length - 1; i >= 0; i--)
+            document.getElementById(selectID).options[i] = null
+    }
 }
 
 // использовалась при добавлении узла --> TODO проверить, что нигде еще не нужна и удалить
