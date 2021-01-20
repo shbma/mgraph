@@ -210,13 +210,17 @@ async function getNodes() {
             'Content-Type': 'application/json;charset=utf-8'
         },
         body: JSON.stringify(request)
-    })
-
+    })  
+    
     if (response.ok) {
         response
             .json()
             .then(result => {
-                result.map(record => {
+                // первой по умолчанию - опция "не выбрано"
+                for (let i = 0; i < selectorsID.length; i++)
+                        document.getElementById(selectorsID[i]).add(new Option('Не выбрано', '-1', false, false))
+                // заселяем списки содержательно
+                result.map(record => {                    
                     let text = "<" + record['p.id'] + ">:" + record['p.title']
                     for (let i = 0; i < selectorsID.length; i++)
                         document.getElementById(selectorsID[i]).add(new Option(text, record['p.id'], false, false))
@@ -518,7 +522,7 @@ function setNodeSelectHandler(){
  */
 function setNodeClickHandler(){    
     viz._network.on('click', (param) => {  // по клику на холст
-        if (param.nodes.length == 0) {
+        if (param.nodes.length == 0) {            
             return
         }
         if (viz._network.getSelectedNodes().length == 1){  
