@@ -233,6 +233,17 @@ async function getNodes() {
 }
 
 /**
+ * ставит выбранной в полях select форм вершину с заданным фронтендным-id
+ * @param{string} id тега где выбирается вершина
+ * @param{number} id вершины на холсте
+ */
+function setNodesInForms(select, visualId){
+    // ставим нужную вершину и симулируем клик по select-у
+    fillSelectSingle(select, nodesBank[visualId].title, nodesBank[visualId].id)    
+    document.getElementById(select).dispatchEvent(new MouseEvent('change'))
+}
+
+/**
  * Выдает данные по типу заданного экземпляра вершины
  * @param{number} instanceID - id вершины, для которой добываем свойства типа
  * @return{objectr} значения свойств типа нужной вершины, 
@@ -501,18 +512,15 @@ function setNodeSelectHandler(){
             return
         }
         let currentNodeId = viz._network.getNodeAt(param.pointer.DOM); // вершина под событием
-        let properties = getVisualNodeProperties(currentNodeId)
-        realID = parseInt(properties.id)
+        //let properties = getVisualNodeProperties(currentNodeId)
+        //realID = parseInt(properties.id)
 
         // ставим выбранной нужную вершину и симулируем клик по select-ам        
-        if (realID != NaN) { 
-            // форма создания ребра - во второй select    
-            document.getElementById('relationshipEnd').value = realID
-            document.getElementById('relationshipEnd').dispatchEvent(new MouseEvent('change'))             
-            // форма Кратчайший путь от A к B - во второй select    
-            document.getElementById('pathP2PfilterSelectorB').value = realID
-            document.getElementById('pathP2PfilterSelectorB').dispatchEvent(new MouseEvent('change'))             
-        }        
+
+        // форма создания ребра - во второй select    
+        setNodesInForms('relationshipEnd', currentNodeId)                
+        // форма Кратчайший путь от A к B - во второй select    
+        setNodesInForms('pathP2PfilterSelectorB', currentNodeId)                        
     })
 }
 
@@ -526,26 +534,20 @@ function setNodeClickHandler(){
             return
         }
         if (viz._network.getSelectedNodes().length == 1){  
-            nodeIdAtCanvas = param.nodes[0]  // ID вершины на холсте, не совпадает с ID в БД        
-            let properties = getVisualNodeProperties(nodeIdAtCanvas)
-            realID = parseInt(properties.id)
-            if (realID != NaN) {
-                // ставим выбранной нужную вершину и симулируем клик по select-ам
-                document.getElementById('nodeSelect').value = realID
-                document.getElementById('nodeSelect').dispatchEvent(new MouseEvent('change'))
-                // форма создания ребра - в первый select    
-                document.getElementById('relationshipStart').value = realID
-                document.getElementById('relationshipStart').dispatchEvent(new MouseEvent('change'))
-                // форма Кратчайший путь от A к B - в первый select    
-                document.getElementById('pathP2PfilterSelectorA').value = realID
-                document.getElementById('pathP2PfilterSelectorA').dispatchEvent(new MouseEvent('change'))
-                // фильтр по глубине
-                document.getElementById('depthFilterSelector').value = realID
-                document.getElementById('depthFilterSelector').dispatchEvent(new MouseEvent('change'))
-                // фильтр по разделу
-                document.getElementById('oneWayFilterSelector').value = realID
-                document.getElementById('oneWayFilterSelector').dispatchEvent(new MouseEvent('change'))
-            }
+            let nodeIdAtCanvas = param.nodes[0]  // ID вершины на холсте, не совпадает с ID в БД        
+            //let properties = getVisualNodeProperties(nodeIdAtCanvas)
+            //let realID = parseInt(properties.id)            
+
+            // ставим выбранной нужную вершину и симулируем клик по select-ам
+            setNodesInForms('nodeSelect', nodeIdAtCanvas)
+            // форма создания ребра - в первый select    
+            setNodesInForms('relationshipStart', nodeIdAtCanvas)
+            // форма Кратчайший путь от A к B - в первый select 
+            setNodesInForms('pathP2PfilterSelectorA', nodeIdAtCanvas)
+            // фильтр по глубине                
+            setNodesInForms('depthFilterSelector', nodeIdAtCanvas)                
+            // фильтр по разделу
+            setNodesInForms('oneWayFilterSelector', nodeIdAtCanvas)                
         }
         
     })

@@ -1,40 +1,3 @@
-function addRelations() {
-    if(firstNodeID < 0 || secondNodeID < 0) {
-        alert(firstNodeID + "," + secondNodeID)
-        return
-    }
-    let cypher = "match(a) where a.id = " + firstNodeID + " match(b) where b.id = " + secondNodeID + " create (a)-[r:"
-    let typeSelect = document.getElementById("Type")
-    if(typeSelect.options[typeSelect.selectedIndex].text === "Новый тип") {
-        if(document.getElementById("nameOfType") === "") {
-            return
-        }
-        cypher += replacementSpaces(document.getElementById("nameOfType").value)
-    }
-    else {
-        cypher += replacementSpaces(typeSelect.options[typeSelect.selectedIndex].value)
-    }
-    let propertys = readPropertys("Type")
-    let isFirstProperty = propertys === "" ? true : false
-    cypher += " {" + propertys + "}]->(b)"
-    let session = driver.session()
-    session
-        .run(cypher)
-        .then(() => {})
-        .catch((error) => {
-            console.log(error)
-            alert("Неполучилось создать связь. Возможно вы где-то ввели недопустимый символ")
-            alert(cypher)
-        })
-        .then(() => {
-            session.close()
-            updateGraph()
-            updateMenu()
-        })
-    newPropertysTypeCount = 0
-    templateChanged(isFirstLevel, "Type")
-}
-
 function addRelationship() {
     let startNodeId = document.getElementById("relationshipStart").value
     let endNodeId = document.getElementById("relationshipEnd").value
@@ -70,3 +33,60 @@ function removeRelationship() {
             updateGraph(true)
         })
 }
+
+/**
+ * Выбирает все ребра с данной доски и заполняет ими списки выбора, 
+ */
+async function fillRelations() {
+    console.log('fillrel')
+    let cypher = `MATCH (a)-[r]-(b) 
+                   WHERE ` + deskCondition('a') + ` AND ` + deskCondition('b') + `
+                   RETURN DISTINCT r.type ORDER BY r.type`
+    console.log(cypher)
+
+    await fillingSelect('relationshipType', cypher, 'r.type')    
+
+}
+
+function editRelation(){
+    
+}
+
+
+// не используется
+/*function addRelations() {
+    if(firstNodeID < 0 || secondNodeID < 0) {
+        alert(firstNodeID + "," + secondNodeID)
+        return
+    }
+    let cypher = "match(a) where a.id = " + firstNodeID + " match(b) where b.id = " + secondNodeID + " create (a)-[r:"
+    let typeSelect = document.getElementById("Type")
+    if(typeSelect.options[typeSelect.selectedIndex].text === "Новый тип") {
+        if(document.getElementById("nameOfType") === "") {
+            return
+        }
+        cypher += replacementSpaces(document.getElementById("nameOfType").value)
+    }
+    else {
+        cypher += replacementSpaces(typeSelect.options[typeSelect.selectedIndex].value)
+    }
+    let propertys = readPropertys("Type")
+    let isFirstProperty = propertys === "" ? true : false
+    cypher += " {" + propertys + "}]->(b)"
+    let session = driver.session()
+    session
+        .run(cypher)
+        .then(() => {})
+        .catch((error) => {
+            console.log(error)
+            alert("Неполучилось создать связь. Возможно вы где-то ввели недопустимый символ")
+            alert(cypher)
+        })
+        .then(() => {
+            session.close()
+            updateGraph()
+            updateMenu()
+        })
+    newPropertysTypeCount = 0
+    templateChanged(isFirstLevel, "Type")
+}*/

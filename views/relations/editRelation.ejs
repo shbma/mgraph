@@ -1,0 +1,23 @@
+<fieldset name="verb" id="verb">
+	<legend align="left">Ребра</legend>
+ 
+	От:
+	<select id="relationshipStart" name="relationshipStart">
+	</select><br>
+
+	Тип
+	<select id="relationshipType" name="relationshipType"></select>
+    <div id="relationEditButton" title="Редактировать">&#128393</div>
+    <div id="relationEditor">        
+        <input type="text" name="title" placeholder="Новое название" maxlength="100">
+        <button type="button" onclick="">Сохранить</button><br>
+    </div> 
+    <br>
+
+    До:
+    <select id="relationshipEnd" name="relationshipEnd">
+    </select><br>
+
+    <button type="button" onclick="addRelationship()">Добавить</button><br>
+    <button type="button" onclick="removeRelationship()">Удалить</button><br>
+</fieldset>

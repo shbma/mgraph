@@ -5,17 +5,15 @@
         <form id="graphMenu" class="graphMenu" name="graphMenu">
             <%- include('../login')  %>                                                          
             <%- include('../nodes/addType') %>
-            <%- include('../nodes/editType') %>            
-
-            <%- include('removeInFuture') %> 
-
+            <%- include('../nodes/editType') %>                       
         </form>
     </div>
     <div id="sidebar" class="menu-bar" scroll="yes">
         <form id="graphMenu" class="graphMenu" name="graphMenu">    
             <%- include('../desks/deskTypo')%>  
             <%- include('../search') %>        
-            <%- include('../relations/relations') %>            
+            <%- include('../relations/relations') %> 
+            <%- include('../filters/pathP2P') %>                       
             <%- include('../filters/depth') %>            
             <%- include('../filters/section') %>            
 

@@ -18,17 +18,16 @@ let newPropertysTypeCount = 0
 let config
 let desk = ""
 let deskDefault = "Basic"
-let firstNodeID = -1
-let secondNodeID = -1
 let vizualHandlersApplyed = false
 const deskInterest = {
     RELATION: 0,
     DESK: 1,
     RELDESK : 2
 }
-let idVisualRealMap = {
+let idVisualRealMap = { // двусторонний словрь visualID<->realID
         'byVisual': {},
-        'byReal': {},
+        'byReal': {},        
         getByVisual: (vid) => { return this.byVisual[vid]},
-        getByReal: (rid) => { return this.byReal[rid]}
+        getByReal: (rid) => { return this.byReal[rid]},                
     }
+let nodesBank = {} // хранилище вершин, отобажаемых на холсте {visualID:node, ...}

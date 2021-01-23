@@ -40,6 +40,23 @@
     width: 83%;
     margin-bottom: 6px;
 }
+#verb select#relationshipType{
+    width: 70%;
+}
+#relationEditButton{
+    display: inline-block;
+    width: 13%;
+    border: 1px solid black;
+    padding: 2px;
+    box-sizing: border-box;
+    text-align: center;
+    border-radius: 3px;
+    background: linear-gradient(#ffffff, #c5cafd);
+}
+#relationEditButton:hover{
+    background: linear-gradient(#c5cafd, #ffffff);   
+    cursor: pointer;
+}
 .graphMenu>*>textarea {
     width: 99%;
     resize: vertical;    

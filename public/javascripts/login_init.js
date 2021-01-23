@@ -23,17 +23,11 @@ function initialCypher(){
                     + deskCondition('b') + ' RETURN a, r',
         'nodes': 'MATCH (a) WHERE ' + deskCondition('a') + ' RETURN a',
         'nodes_ids': 'MATCH (a) WHERE ' + deskCondition('a') + 
-                    ' RETURN id(a) AS visualID, a.id AS realID, a AS node'
+                    ' RETURN id(a) AS visualID, a.id AS realID, a AS node, a.title AS title'
         }
 }
 
 async function start() {
-    let labelEl = document.getElementById("Label")       
-    if (labelEl) {
-        labelEl.add(new Option("Новый тип"))
-        fillingSelect("Label", 'MATCH (n) RETURN distinct labels(n)', 'labels(n)')  // select типов вершин    
-        templateChanged(true, 'Label')
-    } 
     fillTypeSelector("theTypeSelectInAdd")
     
     let selectDeskId = getActualDeskId() 
