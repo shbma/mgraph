@@ -37,18 +37,23 @@ function removeRelationship() {
 /**
  * Выбирает все ребра с данной доски и заполняет ими списки выбора, 
  */
-async function fillRelations() {
-    console.log('fillrel')
-    let cypher = `MATCH (a)-[r]-(b) 
-                   WHERE ` + deskCondition('a') + ` AND ` + deskCondition('b') + `
-                   RETURN DISTINCT r.type ORDER BY r.type`
-    console.log(cypher)
-
-    await fillingSelect('relationshipType', cypher, 'r.type')    
-
+async function fillRelations() {    
+    let deskType = await getDeskTypeAndId()    
+    switch (deskType['type']){
+        case 'Типология':            
+            let cypher = `MATCH (a)-[r]-(b) 
+                           WHERE ` + deskCondition('a') + ` AND ` + deskCondition('b') + `
+                           RETURN DISTINCT r.type ORDER BY r.type`
+            await fillingSelect('relationshipType', cypher, 'r.type')    
+            break
+        case 'Предметная':
+            console.log('предметная доска...')        
+            // TODO: брать отношения со свзанной типологической доски
+    }
+    
 }
 
-function editRelation(){
+function editRelationTypo(){
     
 }
 

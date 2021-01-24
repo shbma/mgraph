@@ -105,19 +105,17 @@ async function fillingSelect(select, cypherCode, captionOfResult, valueOfResult=
     })
 
     if (response.ok) {
-        response
-            .json()
-            .then(result => {                
-                if (result.length == 0) console.log('no results')     
-                // очистим список и заполним заново                      
-                document.querySelectorAll('#'+select+' option').forEach(option => option.remove())                                                 
-                for(let template of result) {                
-                    let captionOfTemplate = template[captionOfResult]                          
-                    let valueOfTemplate = valueOfResult ? template[valueOfResult] : valueOfResult
-                    let isSelected = valueOfTemplate == selectedValue
-                    document.getElementById(select).add(new Option(captionOfTemplate, valueOfTemplate, false, isSelected))
-                }                   
-            })
+        let result = await response.json()                            
+        if (result.length == 0) console.log('no results')     
+        // очистим список и заполним заново                      
+        document.querySelectorAll('#'+select+' option').forEach(option => option.remove())                                                 
+        for(let template of result) {                
+            let captionOfTemplate = template[captionOfResult]                          
+            let valueOfTemplate = valueOfResult ? template[valueOfResult] : valueOfResult
+            let isSelected = valueOfTemplate == selectedValue
+            document.getElementById(select).add(new Option(captionOfTemplate, valueOfTemplate, false, isSelected))
+        }                   
+
     } else {
         console.log('Ошибка HTTP: ' + response.status)
     }

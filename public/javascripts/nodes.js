@@ -213,19 +213,16 @@ async function getNodes() {
     })  
     
     if (response.ok) {
-        response
-            .json()
-            .then(result => {
-                // первой по умолчанию - опция "не выбрано"
-                for (let i = 0; i < selectorsID.length; i++)
-                        document.getElementById(selectorsID[i]).add(new Option('Не выбрано', '-1', false, false))
-                // заселяем списки содержательно
-                result.map(record => {                    
-                    let text = "<" + record['p.id'] + ">:" + record['p.title']
-                    for (let i = 0; i < selectorsID.length; i++)
-                        document.getElementById(selectorsID[i]).add(new Option(text, record['p.id'], false, false))
-                })
-            })
+        let result = response.json()
+        // первой по умолчанию - опция "не выбрано"
+        for (let i = 0; i < selectorsID.length; i++)
+                document.getElementById(selectorsID[i]).add(new Option('Не выбрано', '-1', false, false))
+        // заселяем списки содержательно
+        result.map(record => {                    
+            let text = "<" + record['p.id'] + ">:" + record['p.title']
+            for (let i = 0; i < selectorsID.length; i++)
+                document.getElementById(selectorsID[i]).add(new Option(text, record['p.id'], false, false))
+        })
     } else {
         console.log('Ошибка HTTP: ' + response.status)
     }
@@ -233,7 +230,7 @@ async function getNodes() {
 }
 
 /**
- * ставит выбранной в полях select форм вершину с заданным фронтендным-id
+ * Ставит выбранной в полях select форм вершину с заданным фронтендным-id
  * @param{string} id тега где выбирается вершина
  * @param{number} id вершины на холсте
  */
@@ -282,7 +279,7 @@ async function getNodeTypeInfo(instanceID){
 
 /** 
  * Зполняет списки с типами вершин. Может поставить выбранной по конретному id.
- * @param{string} id элемента со списком выбра на html-странице
+ * @param{string} selector - id элемента со списком выбра на html-странице
  * @param{string} whichID - id элемента, чей тип надо поставить выбранным
  */
 async function fillTypeSelector(selector, whichID=''){
@@ -294,7 +291,7 @@ async function fillTypeSelector(selector, whichID=''){
             selectedTypeId = info.typeID            
         } 
         let cond = deskCondition('n', '', '', deskInterest.RELDESK, {}, deskType='Типология')  
-        fillingSelect(selector, 
+        await fillingSelect(selector, 
                     'MATCH ' + cond + ' RETURN DISTINCT n.title, n.id', 
                     'n.title', 'n.id', selectedTypeId)
     }

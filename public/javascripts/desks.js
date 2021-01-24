@@ -47,11 +47,40 @@ function deskChange(){
 }
 
 /** выдает id доски, который нужно показать или выставить активной в select*/
-function getActualDeskId() {
+function getActualDeskId(){
     return parseInt(document.getElementById("deskSelect").getAttribute('actual-id'))
 }
 
 /** выдает id доски с типологией, которую нужно показать или выставить активной в select*/
-function getActualTypoId() {
+function getActualTypoId(){
     return parseInt(document.getElementById("typoSelect").getAttribute('actual-id'))
+}
+
+/** выдает тип текущей доски, а также ее visualID и realID */
+async function getDeskTypeAndId(){
+    let id = getActualDeskId()
+    let request = {
+        'cypher': `MATCH (d:Доска {id:` + id + `}) RETURN d.type AS type, id(d) AS visualID, d.id AS realID`            
+    }
+
+    let response = await fetch('/driver', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(request)
+    })    
+
+    if (response.ok) {
+        let result = await response.json()        
+        if (result.length == 0){
+            console.log('Ошибка: пустой ответ - у доски нет типа')
+            return false
+        }
+        return result[0]
+    
+    } else {
+        console.log('Ошибка HTTP: ' + response.status)
+        return false
+    }
 }
