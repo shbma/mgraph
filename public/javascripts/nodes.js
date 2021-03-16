@@ -42,7 +42,7 @@ function makeCypher4VertexAdd(typeOfNode='instance', caption, community, templat
     let focus = viz._network.getViewPosition()  // в текущий фокус камеры
     let coords = {x: parseInt(focus.x), y: parseInt(focus.y)}    
     cypher += 'CREATE ' + deskCondition('a', 'd', '', interest=deskInterest.RELATION, relProperties=coords)  // создаем связь до доски                    
-    //console.log(cypher)
+    console.log(cypher)
     return cypher
 }
 

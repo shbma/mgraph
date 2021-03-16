@@ -222,6 +222,20 @@ function autosize(el){
   },0);
 }
 
+/** Экспорт графа в JSON файл */
+function exportData(){
+    let graph = {'nodes': viz._nodes, 'edges': viz._edges}    
+    var graphAsString = JSON.stringify(graph, null, 2)
+    var blob = new Blob([graphAsString], {type: "text/plain"});
+    
+    var link = document.createElement("a");
+    link.setAttribute("href", URL.createObjectURL(blob));
+    
+    var saveAsFile = getDeskName() + '.json' // имя создаваемого файла
+    link.setAttribute("download", saveAsFile);
+    link.click();
+}
+
 /*=================== Обработка событий ================*/
 
 $(document).ready(function() {

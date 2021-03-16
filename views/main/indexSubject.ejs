@@ -17,6 +17,9 @@
             <%- include('../filters/depth') %>            
             <%- include('../filters/section') %>            
 
+            <fieldset name="export" id="export" class="colLeft">
+                <br><button type="button" onclick="exportData()">Экспорт в файл</button><br>
+            </fieldset>
             <fieldset name="search" id="refresh" class="colLeft">
                 <br><button type="button" onclick="updateGraph(true)">Обновить визуализацию</button><br>
             </fieldset>
